@@ -157,9 +157,9 @@
   .text-balance { text-wrap: balance; }
   .bg-mesh {
     background-image:
-      radial-gradient(at 20% 10%, oklch(0.4 0.1 258 / 0.18) 0px, transparent 50%),
-      radial-gradient(at 80% 0%, oklch(0.56 0.12 252 / 0.16) 0px, transparent 50%),
-      radial-gradient(at 60% 90%, oklch(0.235 0.08 265 / 0.12) 0px, transparent 50%);
+      radial-gradient(at 18% 10%, oklch(0.78 0.13 82 / 0.18) 0px, transparent 55%),
+      radial-gradient(at 82% 0%, oklch(0.55 0.1 250 / 0.22) 0px, transparent 55%),
+      radial-gradient(at 60% 95%, oklch(0.78 0.13 82 / 0.10) 0px, transparent 55%);
   }
   .ring-focus {
     outline: 2px solid transparent;
