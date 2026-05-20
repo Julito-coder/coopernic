@@ -35,11 +35,7 @@ export function RecoComposer({ toMember, conversationId, open, onClose, onSent }
       status,
       conversationId,
     });
-    const summary =
-      `🤝 Recommandation envoyée — ${reco.prospectName} (${reco.prospectCompany})` +
-      (reco.estimatedAmount ? ` · ~${reco.estimatedAmount.toLocaleString("fr-FR")} €` : "") +
-      `\n${reco.description}`;
-    onSent?.(summary);
+    onSent?.(reco);
     // reset
     setProspectName(""); setProspectCompany(""); setProspectContact("");
     setDescription(""); setAmount(""); setStatus("envoyee");
