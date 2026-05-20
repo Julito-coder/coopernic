@@ -9,38 +9,82 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as MessagesRouteImport } from './routes/messages'
+import { Route as AnnuaireRouteImport } from './routes/annuaire'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as MembresIdRouteImport } from './routes/membres.$id'
 
+const MessagesRoute = MessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnnuaireRoute = AnnuaireRouteImport.update({
+  id: '/annuaire',
+  path: '/annuaire',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MembresIdRoute = MembresIdRouteImport.update({
+  id: '/membres/$id',
+  path: '/membres/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/annuaire': typeof AnnuaireRoute
+  '/messages': typeof MessagesRoute
+  '/membres/$id': typeof MembresIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/annuaire': typeof AnnuaireRoute
+  '/messages': typeof MessagesRoute
+  '/membres/$id': typeof MembresIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/annuaire': typeof AnnuaireRoute
+  '/messages': typeof MessagesRoute
+  '/membres/$id': typeof MembresIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/annuaire' | '/messages' | '/membres/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/annuaire' | '/messages' | '/membres/$id'
+  id: '__root__' | '/' | '/annuaire' | '/messages' | '/membres/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AnnuaireRoute: typeof AnnuaireRoute
+  MessagesRoute: typeof MessagesRoute
+  MembresIdRoute: typeof MembresIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/messages': {
+      id: '/messages'
+      path: '/messages'
+      fullPath: '/messages'
+      preLoaderRoute: typeof MessagesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/annuaire': {
+      id: '/annuaire'
+      path: '/annuaire'
+      fullPath: '/annuaire'
+      preLoaderRoute: typeof AnnuaireRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +92,21 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/membres/$id': {
+      id: '/membres/$id'
+      path: '/membres/$id'
+      fullPath: '/membres/$id'
+      preLoaderRoute: typeof MembresIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AnnuaireRoute: AnnuaireRoute,
+  MessagesRoute: MessagesRoute,
+  MembresIdRoute: MembresIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
