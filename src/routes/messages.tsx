@@ -1,7 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState, useRef, useEffect } from "react";
-import { CONVERSATIONS, MESSAGE_THREADS, getMember, type Message } from "@/lib/mock-data";
+import {
+  CONVERSATIONS,
+  MESSAGE_THREADS,
+  MEMBERS,
+  getMember,
+  type Message,
+  type MessageAttachment,
+} from "@/lib/mock-data";
 import { RecoComposer } from "@/components/RecoComposer";
+import { STATUS_LABEL } from "@/lib/recos-store";
+import { Paperclip, Image as ImageIcon, UserPlus, Sparkles, Send, X, Search } from "lucide-react";
 
 export const Route = createFileRoute("/messages")({
   component: MessagesPage,
@@ -19,7 +28,10 @@ function MessagesPage() {
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [extraMessages, setExtraMessages] = useState<Record<string, Message[]>>({});
   const [recoOpen, setRecoOpen] = useState(false);
+  const [contactPickerOpen, setContactPickerOpen] = useState(false);
+  const [attachMenuOpen, setAttachMenuOpen] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -41,17 +53,37 @@ function MessagesPage() {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [activeId, extraMessages]);
 
+  const pushMessage = (msg: Omit<Message, "id" | "at" | "from"> & { from?: "me" | "them" }) => {
+    const now = new Date();
+    const at = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    const full: Message = {
+      id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      from: msg.from ?? "me",
+      text: msg.text,
+      attachment: msg.attachment,
+      at,
+    };
+    setExtraMessages((prev) => ({
+      ...prev,
+      [activeId]: [...(prev[activeId] ?? []), full],
+    }));
+  };
+
   const send = () => {
     const text = (drafts[activeId] ?? "").trim();
     if (!text) return;
-    const now = new Date();
-    const at = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-    const newMsg: Message = { id: `local-${Date.now()}`, from: "me", text, at };
-    setExtraMessages((prev) => ({
-      ...prev,
-      [activeId]: [...(prev[activeId] ?? []), newMsg],
-    }));
+    pushMessage({ text });
     setDrafts((prev) => ({ ...prev, [activeId]: "" }));
+  };
+
+  const handleFiles = (files: FileList | null) => {
+    if (!files) return;
+    Array.from(files).forEach((f) => {
+      if (!f.type.startsWith("image/")) return;
+      const url = URL.createObjectURL(f);
+      pushMessage({ attachment: { kind: "photo", url, name: f.name } });
+    });
+    setAttachMenuOpen(false);
   };
 
   return (
@@ -75,7 +107,7 @@ function MessagesPage() {
                 onChange={(e) => setQuery(e.target.value)}
                 className="w-full rounded-lg border border-input bg-background px-3 py-2 pl-9 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring/50"
               />
-              <svg className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
+              <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             </div>
           </div>
           <ul className="flex-1 overflow-y-auto">
@@ -131,50 +163,71 @@ function MessagesPage() {
                 <div className="text-xs text-ink-muted">{member.role} · {member.company}</div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setRecoOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-2 text-xs font-bold text-accent-foreground transition-all hover:-translate-y-0.5"
-              >
-                <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
-                Envoyer une reco
-              </button>
-              <Link
-                to="/membres/$id"
-                params={{ id: member.id }}
-                className="text-xs font-semibold text-accent hover:underline"
-              >
-                Fiche →
-              </Link>
-            </div>
+            <Link
+              to="/membres/$id"
+              params={{ id: member.id }}
+              className="text-xs font-semibold text-accent hover:underline"
+            >
+              Fiche →
+            </Link>
           </header>
 
-          <div className="flex-1 space-y-3 overflow-y-auto bg-background/40 px-6 py-6">
+          {/* Thread */}
+          <div className="flex-1 space-y-2 overflow-y-auto bg-background/40 px-4 py-6 md:px-6">
             {thread.map((m) => (
-              <div key={m.id} className={"flex " + (m.from === "me" ? "justify-end" : "justify-start")}>
-                <div
-                  className={
-                    "max-w-[75%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm " +
-                    (m.from === "me"
-                      ? "rounded-br-md bg-primary text-primary-foreground"
-                      : "rounded-bl-md border border-border bg-surface text-foreground")
-                  }
-                >
-                  <p>{m.text}</p>
-                  <div className={
-                    "mt-1 text-[10px] " +
-                    (m.from === "me" ? "text-primary-foreground/60" : "text-muted-foreground")
-                  }>
-                    {m.at}
-                  </div>
-                </div>
-              </div>
+              <ChatBubble key={m.id} message={m} />
             ))}
             <div ref={endRef} />
           </div>
 
-          <div className="border-t border-border/70 bg-surface p-4">
+          {/* Composer */}
+          <div className="border-t border-border/70 bg-surface p-3">
             <div className="flex items-end gap-2 rounded-2xl border border-border bg-background p-2 focus-within:ring-2 focus-within:ring-ring/50">
+              {/* + button with attach menu */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setAttachMenuOpen((v) => !v)}
+                  className="flex h-10 w-10 items-center justify-center rounded-xl text-ink-muted transition-colors hover:bg-secondary hover:text-foreground"
+                  aria-label="Ajouter une pièce jointe"
+                >
+                  <Paperclip className="h-5 w-5" />
+                </button>
+                {attachMenuOpen && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setAttachMenuOpen(false)} />
+                    <div className="absolute bottom-12 left-0 z-20 w-56 overflow-hidden rounded-2xl border border-border bg-popover shadow-elevated">
+                      <AttachOption
+                        icon={<ImageIcon className="h-4 w-4" />}
+                        label="Photo"
+                        sub="Image depuis ton appareil"
+                        onClick={() => fileRef.current?.click()}
+                      />
+                      <AttachOption
+                        icon={<UserPlus className="h-4 w-4" />}
+                        label="Contact"
+                        sub="Partager un membre"
+                        onClick={() => { setAttachMenuOpen(false); setContactPickerOpen(true); }}
+                      />
+                      <AttachOption
+                        icon={<Sparkles className="h-4 w-4 text-accent" />}
+                        label="Recommandation"
+                        sub="Envoyer une reco business"
+                        onClick={() => { setAttachMenuOpen(false); setRecoOpen(true); }}
+                      />
+                    </div>
+                  </>
+                )}
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => handleFiles(e.target.files)}
+                />
+              </div>
+
               <textarea
                 value={drafts[activeId] ?? ""}
                 onChange={(e) => setDrafts((p) => ({ ...p, [activeId]: e.target.value }))}
@@ -191,34 +244,238 @@ function MessagesPage() {
               <button
                 onClick={send}
                 disabled={!(drafts[activeId] ?? "").trim()}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
+                className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-accent-foreground transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
+                aria-label="Envoyer"
               >
-                Envoyer
-                <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+                <Send className="h-4 w-4" />
               </button>
             </div>
             <p className="mt-2 px-1 text-[11px] text-muted-foreground">
-              ↵ Envoyer · ⇧↵ Nouvelle ligne · Messagerie en lecture seule jusqu'à l'activation de Lovable Cloud
+              ↵ Envoyer · ⇧↵ Nouvelle ligne · 📎 Photo · 👤 Contact · ✨ Reco
             </p>
           </div>
         </section>
       </div>
 
+      {/* Reco composer */}
       <RecoComposer
         open={recoOpen}
         onClose={() => setRecoOpen(false)}
         toMember={member}
         conversationId={activeId}
-        onSent={(summary) => {
-          const now = new Date();
-          const at = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-          const newMsg: Message = { id: `reco-${Date.now()}`, from: "me", text: summary, at };
-          setExtraMessages((prev) => ({
-            ...prev,
-            [activeId]: [...(prev[activeId] ?? []), newMsg],
-          }));
+        onSent={(reco) => {
+          pushMessage({
+            attachment: {
+              kind: "reco",
+              recoId: reco.id,
+              prospectName: reco.prospectName,
+              prospectCompany: reco.prospectCompany,
+              description: reco.description,
+              estimatedAmount: reco.estimatedAmount,
+              status: reco.status,
+            },
+          });
         }}
       />
+
+      {/* Contact picker modal */}
+      {contactPickerOpen && (
+        <ContactPicker
+          onClose={() => setContactPickerOpen(false)}
+          onPick={(memberId) => {
+            pushMessage({ attachment: { kind: "contact", memberId } });
+            setContactPickerOpen(false);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function AttachOption({
+  icon, label, sub, onClick,
+}: { icon: React.ReactNode; label: string; sub: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-secondary"
+    >
+      <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary text-foreground">
+        {icon}
+      </span>
+      <span className="flex flex-col">
+        <span className="text-sm font-semibold text-foreground">{label}</span>
+        <span className="text-[11px] text-muted-foreground">{sub}</span>
+      </span>
+    </button>
+  );
+}
+
+function ChatBubble({ message }: { message: Message }) {
+  const mine = message.from === "me";
+  const a = message.attachment;
+  return (
+    <div className={"flex " + (mine ? "justify-end" : "justify-start")}>
+      <div
+        className={
+          "max-w-[78%] overflow-hidden rounded-2xl text-sm leading-relaxed shadow-sm " +
+          (mine
+            ? "rounded-br-md bg-accent text-accent-foreground"
+            : "rounded-bl-md border border-border bg-surface text-foreground")
+        }
+      >
+        {a?.kind === "photo" && (
+          <a href={a.url} target="_blank" rel="noreferrer" className="block">
+            <img
+              src={a.url}
+              alt={a.name ?? "photo"}
+              className="max-h-72 w-full max-w-sm object-cover"
+            />
+          </a>
+        )}
+
+        {a?.kind === "contact" && <ContactCard memberId={a.memberId} mine={mine} />}
+        {a?.kind === "reco" && <RecoCard a={a} mine={mine} />}
+
+        {message.text && (
+          <p className={"whitespace-pre-wrap px-3.5 py-2 " + (a ? "pt-2" : "")}>{message.text}</p>
+        )}
+
+        <div className={
+          "px-3.5 pb-1.5 text-right text-[10px] " +
+          (mine ? "text-accent-foreground/60" : "text-muted-foreground")
+        }>
+          {message.at}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ContactCard({ memberId, mine }: { memberId: string; mine: boolean }) {
+  const m = getMember(memberId);
+  if (!m) return null;
+  return (
+    <Link
+      to="/membres/$id"
+      params={{ id: m.id }}
+      className={
+        "flex items-center gap-3 border-b px-3 py-3 transition-colors " +
+        (mine ? "border-accent-foreground/15 hover:bg-accent-foreground/5" : "border-border/60 hover:bg-secondary/50")
+      }
+    >
+      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-sm font-bold text-primary-foreground">
+        {m.initials}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-sm font-bold">{m.firstName} {m.lastName}</div>
+        <div className={"truncate text-xs " + (mine ? "text-accent-foreground/70" : "text-ink-muted")}>
+          {m.role} · {m.company}
+        </div>
+      </div>
+      <span className={"text-[10px] font-bold uppercase tracking-wider " + (mine ? "text-accent-foreground/60" : "text-muted-foreground")}>
+        Contact
+      </span>
+    </Link>
+  );
+}
+
+function RecoCard({ a, mine }: {
+  a: Extract<MessageAttachment, { kind: "reco" }>;
+  mine: boolean;
+}) {
+  const label = STATUS_LABEL[a.status as keyof typeof STATUS_LABEL] ?? a.status;
+  return (
+    <Link
+      to="/recos"
+      className={
+        "block border-b px-3.5 py-3 " +
+        (mine ? "border-accent-foreground/15" : "border-border/60")
+      }
+    >
+      <div className={"mb-1 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] " + (mine ? "text-accent-foreground/70" : "text-accent")}>
+        <Sparkles className="h-3 w-3" /> Recommandation
+      </div>
+      <div className="font-display text-sm font-extrabold">
+        {a.prospectName} <span className={mine ? "opacity-70" : "text-ink-muted"}>· {a.prospectCompany}</span>
+      </div>
+      <p className={"mt-1 line-clamp-2 text-xs " + (mine ? "text-accent-foreground/80" : "text-ink-muted")}>
+        {a.description}
+      </p>
+      <div className="mt-2 flex items-center gap-2 text-[11px]">
+        <span className={
+          "rounded-full px-2 py-0.5 font-bold " +
+          (mine ? "bg-accent-foreground/15" : "bg-secondary text-foreground")
+        }>
+          {label}
+        </span>
+        {a.estimatedAmount && (
+          <span className={mine ? "opacity-80" : "text-ink-muted"}>
+            ~{a.estimatedAmount.toLocaleString("fr-FR")} €
+          </span>
+        )}
+        <span className={"ml-auto text-[10px] font-semibold " + (mine ? "opacity-70" : "text-accent")}>
+          Voir dans Stats →
+        </span>
+      </div>
+    </Link>
+  );
+}
+
+function ContactPicker({
+  onClose, onPick,
+}: { onClose: () => void; onPick: (id: string) => void }) {
+  const [q, setQ] = useState("");
+  const list = useMemo(() => {
+    const s = q.trim().toLowerCase();
+    if (!s) return MEMBERS;
+    return MEMBERS.filter((m) =>
+      `${m.firstName} ${m.lastName} ${m.company} ${m.role}`.toLowerCase().includes(s)
+    );
+  }, [q]);
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/40 px-4 backdrop-blur-sm">
+      <div className="w-full max-w-md overflow-hidden rounded-2xl border border-border bg-surface shadow-elevated">
+        <header className="flex items-center justify-between border-b border-border/70 px-5 py-4">
+          <h2 className="font-display text-lg font-extrabold">Partager un contact</h2>
+          <button onClick={onClose} className="rounded-full p-1.5 text-ink-muted hover:bg-secondary hover:text-foreground">
+            <X className="h-4 w-4" />
+          </button>
+        </header>
+        <div className="border-b border-border/70 p-3">
+          <div className="relative">
+            <input
+              autoFocus
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Rechercher un membre…"
+              className="w-full rounded-lg border border-input bg-background px-3 py-2 pl-9 text-sm outline-none focus:ring-2 focus:ring-ring/50"
+            />
+            <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          </div>
+        </div>
+        <ul className="max-h-80 overflow-y-auto">
+          {list.map((m) => (
+            <li key={m.id}>
+              <button
+                onClick={() => onPick(m.id)}
+                className="flex w-full items-center gap-3 px-5 py-3 text-left transition-colors hover:bg-secondary"
+              >
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-xs font-bold text-primary-foreground">
+                  {m.initials}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-semibold text-foreground">
+                    {m.firstName} {m.lastName}
+                  </div>
+                  <div className="truncate text-xs text-ink-muted">{m.role} · {m.company}</div>
+                </div>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }
