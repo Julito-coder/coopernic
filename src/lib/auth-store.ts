@@ -8,6 +8,7 @@ export type Club = {
   name: string;
   city: string;
   gestionnaireId: string | null; // member id of the gestionnaire
+  openToNetwork: boolean; // visible dans l'annuaire Coopernic inter-clubs
   createdAt: string;
 };
 
