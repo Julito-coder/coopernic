@@ -33,10 +33,14 @@ function AnnuaireePage() {
   const [sector, setSector] = useState<string>("");
   const [city, setCity] = useState<string>("");
   const [view, setView] = useState<View>("grid");
+
+  // Règle : réciprocité. Un club privé ne voit pas le réseau et n'y figure pas.
+  const canSeeNetwork = !myClub || myClub.openToNetwork || session.role === "superadmin";
   const [scope, setScope] = useState<Scope>(myClub ? "club" : "network");
+  const effectiveScope: Scope = scope === "network" && !canSeeNetwork ? "club" : scope;
 
   const base = useMemo<Member[]>(() => {
-    if (scope === "club" && myClub) {
+    if (effectiveScope === "club" && myClub) {
       return membersOfClub(myClub.name);
     }
     // Réseau : tous les membres dont le club a opté pour l'annuaire global
@@ -47,8 +51,8 @@ function AnnuaireePage() {
       const seen = new Set(net.map((m) => m.id));
       return [...own.filter((m) => !seen.has(m.id)), ...net];
     }
-    return scope === "network" ? net : allMembers();
-  }, [scope, myClub?.id]);
+    return effectiveScope === "network" ? net : allMembers();
+  }, [effectiveScope, myClub?.id, myClub?.openToNetwork]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
