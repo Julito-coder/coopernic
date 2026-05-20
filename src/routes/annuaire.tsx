@@ -1,29 +1,58 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { MEMBERS, SECTORS, CITIES } from "@/lib/mock-data";
+import { SECTORS, CITIES, type Member } from "@/lib/mock-data";
 import { MemberCard } from "@/components/MemberCard";
+import {
+  useAuth,
+  allMembers,
+  membersOfClub,
+  networkMembers,
+  getClub,
+  listClubs,
+} from "@/lib/auth-store";
+import { Globe2, Users } from "lucide-react";
 
 export const Route = createFileRoute("/annuaire")({
   component: AnnuaireePage,
   head: () => ({
     meta: [
       { title: "Annuaire des membres — Coopernic" },
-      { name: "description", content: "Explorez l'annuaire des membres du club : recherche, filtres par secteur et ville, vue carte." },
+      { name: "description", content: "Explorez les membres de votre club et trouvez quelqu'un dans l'annuaire Coopernic inter-clubs." },
     ],
   }),
 });
 
 type View = "grid" | "map";
+type Scope = "club" | "network";
 
 function AnnuaireePage() {
+  const { session } = useAuth();
+  const myClub = session.clubId ? getClub(session.clubId) : null;
+
   const [query, setQuery] = useState("");
   const [sector, setSector] = useState<string>("");
   const [city, setCity] = useState<string>("");
   const [view, setView] = useState<View>("grid");
+  const [scope, setScope] = useState<Scope>(myClub ? "club" : "network");
+
+  const base = useMemo<Member[]>(() => {
+    if (scope === "club" && myClub) {
+      return membersOfClub(myClub.name);
+    }
+    // Réseau : tous les membres dont le club a opté pour l'annuaire global
+    const net = networkMembers();
+    // si l'utilisateur a un club, inclure aussi ses propres membres
+    if (myClub) {
+      const own = membersOfClub(myClub.name);
+      const seen = new Set(net.map((m) => m.id));
+      return [...own.filter((m) => !seen.has(m.id)), ...net];
+    }
+    return scope === "network" ? net : allMembers();
+  }, [scope, myClub?.id]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return MEMBERS.filter((m) => {
+    return base.filter((m) => {
       if (sector && m.sector !== sector) return false;
       if (city && m.city !== city) return false;
       if (!q) return true;
@@ -31,13 +60,15 @@ function AnnuaireePage() {
         `${m.firstName} ${m.lastName}`.toLowerCase().includes(q) ||
         m.company.toLowerCase().includes(q) ||
         m.role.toLowerCase().includes(q) ||
+        m.club.toLowerCase().includes(q) ||
         m.tags.some((t) => t.toLowerCase().includes(q))
       );
     });
-  }, [query, sector, city]);
+  }, [base, query, sector, city]);
 
   const reset = () => { setQuery(""); setSector(""); setCity(""); };
   const hasFilters = query || sector || city;
+  const openClubsCount = listClubs().filter((c) => c.openToNetwork).length;
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-12">
@@ -45,11 +76,14 @@ function AnnuaireePage() {
         <div>
           <div className="text-xs font-bold uppercase tracking-[0.2em] text-accent">Annuaire</div>
           <h1 className="mt-2 font-display text-4xl font-extrabold tracking-tight text-foreground md:text-5xl">
-            {MEMBERS.length} membres à activer
+            {scope === "club" && myClub
+              ? `${filtered.length} membre${filtered.length > 1 ? "s" : ""} dans ${myClub.name}`
+              : `Trouver quelqu'un dans l'annuaire Coopernic`}
           </h1>
           <p className="mt-2 max-w-2xl text-ink-muted">
-            Cherchez par nom, entreprise, secteur ou expertise. Filtrez et passez en vue carte
-            pour repérer qui est proche de vous.
+            {scope === "club"
+              ? "Cherchez par nom, entreprise, secteur ou expertise au sein de votre club."
+              : `Découvrez les membres des ${openClubsCount} club${openClubsCount > 1 ? "s" : ""} ouverts au réseau Coopernic.`}
           </p>
         </div>
 
@@ -71,12 +105,31 @@ function AnnuaireePage() {
         </div>
       </div>
 
+      {/* Scope switch */}
+      <div className="mt-6 inline-flex rounded-xl border border-border bg-surface p-1 shadow-card">
+        {myClub && (
+          <ScopeBtn
+            active={scope === "club"}
+            onClick={() => setScope("club")}
+            icon={<Users className="h-4 w-4" />}
+            label={`Mon club · ${myClub.name}`}
+          />
+        )}
+        <ScopeBtn
+          active={scope === "network"}
+          onClick={() => setScope("network")}
+          icon={<Globe2 className="h-4 w-4" />}
+          label="Réseau Coopernic"
+          badge={`${openClubsCount} clubs`}
+        />
+      </div>
+
       {/* Filters */}
-      <div className="mt-8 grid gap-3 rounded-2xl border border-border bg-surface p-4 shadow-card md:grid-cols-[1fr_auto_auto_auto]">
+      <div className="mt-6 grid gap-3 rounded-2xl border border-border bg-surface p-4 shadow-card md:grid-cols-[1fr_auto_auto_auto]">
         <div className="relative">
           <input
             type="search"
-            placeholder="Rechercher un membre, une entreprise, une compétence…"
+            placeholder="Rechercher un membre, une entreprise, un club, une compétence…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="w-full rounded-xl border border-input bg-background px-4 py-3 pl-11 text-sm text-foreground outline-none ring-ring/50 placeholder:text-muted-foreground focus:ring-2"
@@ -123,7 +176,14 @@ function AnnuaireePage() {
           </div>
         ) : (
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((m) => <MemberCard key={m.id} member={m} />)}
+            {filtered.map((m) => (
+              <MemberCard
+                key={m.id}
+                member={m}
+                clubBadge={scope === "network" ? m.club : undefined}
+                isExternal={scope === "network" && (!myClub || m.club !== myClub.name)}
+              />
+            ))}
           </div>
         )
       ) : (
@@ -133,7 +193,32 @@ function AnnuaireePage() {
   );
 }
 
-function MapView({ members }: { members: typeof MEMBERS }) {
+function ScopeBtn({
+  active, onClick, icon, label, badge,
+}: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string; badge?: string }) {
+  return (
+    <button
+      onClick={onClick}
+      className={
+        "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors " +
+        (active
+          ? "bg-accent text-accent-foreground"
+          : "text-ink-muted hover:text-foreground")
+      }
+    >
+      {icon}
+      <span>{label}</span>
+      {badge && (
+        <span className={
+          "rounded-full px-1.5 py-0.5 text-[10px] font-bold " +
+          (active ? "bg-accent-foreground/20" : "bg-secondary text-foreground")
+        }>{badge}</span>
+      )}
+    </button>
+  );
+}
+
+function MapView({ members }: { members: Member[] }) {
   const [hover, setHover] = useState<string | null>(null);
 
   return (
@@ -141,7 +226,6 @@ function MapView({ members }: { members: typeof MEMBERS }) {
       <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-primary to-[oklch(0.3_0.08_265)] p-6 shadow-elevated">
         <div className="absolute inset-0 bg-mesh opacity-30" />
         <div className="relative aspect-[4/5] w-full md:aspect-[5/4]">
-          {/* Simplified France silhouette */}
           <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full">
             <path
               d="M30,15 Q40,8 52,12 L70,10 Q82,18 85,28 L88,42 Q86,55 80,68 L72,82 Q60,90 50,88 L38,90 Q26,86 22,75 L18,60 Q15,48 18,35 Q22,22 30,15 Z"
@@ -170,7 +254,7 @@ function MapView({ members }: { members: typeof MEMBERS }) {
                   </span>
                   <span className="block text-[11px] text-ink-muted">{m.company}</span>
                   <span className="block text-[10px] font-semibold uppercase tracking-wider text-accent">
-                    {m.city}
+                    {m.city} · {m.club}
                   </span>
                 </span>
               )}
@@ -205,7 +289,7 @@ function MapView({ members }: { members: typeof MEMBERS }) {
                   <div className="truncate text-sm font-semibold text-foreground">
                     {m.firstName} {m.lastName}
                   </div>
-                  <div className="truncate text-xs text-ink-muted">{m.city} · {m.sector}</div>
+                  <div className="truncate text-xs text-ink-muted">{m.club} · {m.city}</div>
                 </div>
               </Link>
             </li>

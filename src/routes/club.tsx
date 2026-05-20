@@ -7,10 +7,12 @@ import {
   addMember,
   removeMember,
   setGestionnaire,
+  setClubOpenToNetwork,
 } from "@/lib/auth-store";
 import { SECTORS, CITIES } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -25,7 +27,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { Trash2, UserPlus, Crown, ShieldCheck } from "lucide-react";
+import { Trash2, UserPlus, Crown, ShieldCheck, Globe2 } from "lucide-react";
 
 type Search = { id?: string };
 
@@ -88,6 +90,32 @@ function ClubPage() {
           {gest && <> · Gestionnaire : {gest.firstName} {gest.lastName}</>}
         </p>
       </header>
+
+      <Card>
+        <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
+          <div className="flex gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/15 text-accent">
+              <Globe2 className="h-5 w-5" />
+            </div>
+            <div>
+              <CardTitle className="font-display">Annuaire Coopernic inter-clubs</CardTitle>
+              <CardDescription className="mt-1 max-w-xl">
+                Active pour rendre ton club visible dans l'annuaire global. Les membres
+                d'autres clubs pourront trouver et contacter les tiens — et inversement.
+              </CardDescription>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 pt-1">
+            <span className={"text-xs font-bold uppercase tracking-wider " + (club.openToNetwork ? "text-accent" : "text-muted-foreground")}>
+              {club.openToNetwork ? "Ouvert" : "Privé"}
+            </span>
+            <Switch
+              checked={club.openToNetwork}
+              onCheckedChange={(v) => setClubOpenToNetwork(club.id, v)}
+            />
+          </div>
+        </CardHeader>
+      </Card>
 
       <AddMemberForm clubName={club.name} />
 

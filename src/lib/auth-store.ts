@@ -8,6 +8,7 @@ export type Club = {
   name: string;
   city: string;
   gestionnaireId: string | null; // member id of the gestionnaire
+  openToNetwork: boolean; // visible dans l'annuaire Coopernic inter-clubs
   createdAt: string;
 };
 
@@ -37,13 +38,14 @@ const slug = (s: string) =>
 
 function bootstrapClubs(): Club[] {
   const names = Array.from(new Set(MEMBERS.map((m) => m.club)));
-  return names.map((name) => {
+  return names.map((name, i) => {
     const sample = MEMBERS.find((m) => m.club === name)!;
     return {
       id: slug(name),
       name,
       city: sample.city,
       gestionnaireId: sample.id,
+      openToNetwork: i % 2 === 0, // 1 club sur 2 ouvert au réseau pour la démo
       createdAt: new Date().toISOString(),
     };
   });
@@ -142,11 +144,29 @@ export function createClub(input: { name: string; city: string }) {
     name: input.name,
     city: input.city,
     gestionnaireId: null,
+    openToNetwork: false,
     createdAt: new Date().toISOString(),
   };
   state = { ...state, clubs: [club, ...state.clubs] };
   emit();
   return club;
+}
+
+export function setClubOpenToNetwork(clubId: string, open: boolean) {
+  state = {
+    ...state,
+    clubs: state.clubs.map((c) => (c.id === clubId ? { ...c, openToNetwork: open } : c)),
+  };
+  emit();
+}
+
+export function networkMembers(): Member[] {
+  const openNames = new Set(state.clubs.filter((c) => c.openToNetwork).map((c) => c.name));
+  return allMembers().filter((m) => openNames.has(m.club));
+}
+
+export function listClubs(): Club[] {
+  return state.clubs;
 }
 
 export function deleteClub(id: string) {
