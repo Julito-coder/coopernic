@@ -1,6 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState, useRef, useEffect } from "react";
 import { CONVERSATIONS, MESSAGE_THREADS, getMember, type Message } from "@/lib/mock-data";
+import { RecoComposer } from "@/components/RecoComposer";
 
 export const Route = createFileRoute("/messages")({
   component: MessagesPage,
@@ -17,6 +18,7 @@ function MessagesPage() {
   const [query, setQuery] = useState("");
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [extraMessages, setExtraMessages] = useState<Record<string, Message[]>>({});
+  const [recoOpen, setRecoOpen] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
 
   const filtered = useMemo(() => {
@@ -129,12 +131,22 @@ function MessagesPage() {
                 <div className="text-xs text-ink-muted">{member.role} · {member.company}</div>
               </div>
             </div>
-            <a
-              href={`/membres/${member.id}`}
-              className="text-xs font-semibold text-accent hover:underline"
-            >
-              Voir la fiche →
-            </a>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setRecoOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-2 text-xs font-bold text-accent-foreground transition-all hover:-translate-y-0.5"
+              >
+                <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
+                Envoyer une reco
+              </button>
+              <Link
+                to="/membres/$id"
+                params={{ id: member.id }}
+                className="text-xs font-semibold text-accent hover:underline"
+              >
+                Fiche →
+              </Link>
+            </div>
           </header>
 
           <div className="flex-1 space-y-3 overflow-y-auto bg-background/40 px-6 py-6">
@@ -191,6 +203,22 @@ function MessagesPage() {
           </div>
         </section>
       </div>
+
+      <RecoComposer
+        open={recoOpen}
+        onClose={() => setRecoOpen(false)}
+        toMember={member}
+        conversationId={activeId}
+        onSent={(summary) => {
+          const now = new Date();
+          const at = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+          const newMsg: Message = { id: `reco-${Date.now()}`, from: "me", text: summary, at };
+          setExtraMessages((prev) => ({
+            ...prev,
+            [activeId]: [...(prev[activeId] ?? []), newMsg],
+          }));
+        }}
+      />
     </div>
   );
 }
