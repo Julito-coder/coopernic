@@ -7,7 +7,7 @@ type Props = {
   conversationId?: string;
   open: boolean;
   onClose: () => void;
-  onSent?: (summary: string) => void;
+  onSent?: (reco: Reco) => void;
 };
 
 export function RecoComposer({ toMember, conversationId, open, onClose, onSent }: Props) {
