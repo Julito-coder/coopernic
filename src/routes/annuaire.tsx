@@ -80,12 +80,12 @@ function AnnuaireePage() {
         <div>
           <div className="text-xs font-bold uppercase tracking-[0.2em] text-accent">Annuaire</div>
           <h1 className="mt-2 font-display text-4xl font-extrabold tracking-tight text-foreground md:text-5xl">
-            {scope === "club" && myClub
+            {effectiveScope === "club" && myClub
               ? `${filtered.length} membre${filtered.length > 1 ? "s" : ""} dans ${myClub.name}`
               : `Trouver quelqu'un dans l'annuaire Coopernic`}
           </h1>
           <p className="mt-2 max-w-2xl text-ink-muted">
-            {scope === "club"
+            {effectiveScope === "club"
               ? "Cherchez par nom, entreprise, secteur ou expertise au sein de votre club."
               : `Découvrez les membres des ${openClubsCount} club${openClubsCount > 1 ? "s" : ""} ouverts au réseau Coopernic.`}
           </p>
