@@ -144,11 +144,29 @@ export function createClub(input: { name: string; city: string }) {
     name: input.name,
     city: input.city,
     gestionnaireId: null,
+    openToNetwork: false,
     createdAt: new Date().toISOString(),
   };
   state = { ...state, clubs: [club, ...state.clubs] };
   emit();
   return club;
+}
+
+export function setClubOpenToNetwork(clubId: string, open: boolean) {
+  state = {
+    ...state,
+    clubs: state.clubs.map((c) => (c.id === clubId ? { ...c, openToNetwork: open } : c)),
+  };
+  emit();
+}
+
+export function networkMembers(): Member[] {
+  const openNames = new Set(state.clubs.filter((c) => c.openToNetwork).map((c) => c.name));
+  return allMembers().filter((m) => openNames.has(m.club));
+}
+
+export function listClubs(): Club[] {
+  return state.clubs;
 }
 
 export function deleteClub(id: string) {
