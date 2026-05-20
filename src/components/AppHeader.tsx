@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import logoMark from "@/assets/coopernic-mark.png";
 import { useAuth, loginAs, allMembers, type Role } from "@/lib/auth-store";
@@ -31,7 +32,11 @@ const ROLE_META: Record<Role, { label: string; icon: typeof User; tone: string }
 
 export function AppHeader() {
   const { session } = useAuth();
-  const items = baseNav.filter((n) => n.roles.includes(session.role));
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  // Avant hydratation : on n'affiche que les items publics pour éviter un mismatch SSR/localStorage.
+  const effectiveRole: Role = mounted ? session.role : "membre";
+  const items = baseNav.filter((n) => n.roles.includes(effectiveRole));
   const RoleIcon = ROLE_META[session.role].icon;
   const members = allMembers();
 
@@ -45,7 +50,7 @@ export function AppHeader() {
             className="h-10 w-10 rounded-[10px] object-cover shadow-sm ring-1 ring-border/60 transition-transform group-hover:scale-105"
           />
           <div className="leading-tight">
-            <div className="font-display text-[17px] font-extrabold tracking-tight text-primary">
+            <div className="font-display text-[17px] font-extrabold tracking-tight text-foreground">
               coopern<span className="text-accent">i</span>c
             </div>
             <div className="text-[9px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
