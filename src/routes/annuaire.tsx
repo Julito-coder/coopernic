@@ -110,22 +110,32 @@ function AnnuaireePage() {
       </div>
 
       {/* Scope switch */}
-      <div className="mt-6 inline-flex rounded-xl border border-border bg-surface p-1 shadow-card">
-        {myClub && (
+      <div className="mt-6 flex flex-wrap items-center gap-3">
+        <div className="inline-flex rounded-xl border border-border bg-surface p-1 shadow-card">
+          {myClub && (
+            <ScopeBtn
+              active={effectiveScope === "club"}
+              onClick={() => setScope("club")}
+              icon={<Users className="h-4 w-4" />}
+              label={`Mon club · ${myClub.name}`}
+            />
+          )}
           <ScopeBtn
-            active={scope === "club"}
-            onClick={() => setScope("club")}
-            icon={<Users className="h-4 w-4" />}
-            label={`Mon club · ${myClub.name}`}
+            active={effectiveScope === "network"}
+            disabled={!canSeeNetwork}
+            onClick={() => canSeeNetwork && setScope("network")}
+            icon={canSeeNetwork ? <Globe2 className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+            label="Réseau Coopernic"
+            badge={canSeeNetwork ? `${openClubsCount} clubs` : undefined}
           />
+        </div>
+        {!canSeeNetwork && myClub && (
+          <p className="text-xs text-ink-muted">
+            Club privé : pour voir les autres membres du réseau, active l'annuaire inter-clubs depuis{" "}
+            <Link to="/club" className="font-semibold text-accent underline">la page de ton club</Link>.
+            La visibilité est réciproque.
+          </p>
         )}
-        <ScopeBtn
-          active={scope === "network"}
-          onClick={() => setScope("network")}
-          icon={<Globe2 className="h-4 w-4" />}
-          label="Réseau Coopernic"
-          badge={`${openClubsCount} clubs`}
-        />
       </div>
 
       {/* Filters */}
