@@ -7,7 +7,7 @@ export const Route = createFileRoute("/messages")({
   component: MessagesPage,
   head: () => ({
     meta: [
-      { title: "Messages — COOPERNIK" },
+      { title: "Messages — Coopernic" },
       { name: "description", content: "Messagerie 1-to-1 entre membres du club." },
     ],
   }),

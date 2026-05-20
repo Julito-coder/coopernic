@@ -11,7 +11,7 @@ export const Route = createFileRoute("/membres/$id")({
   head: ({ loaderData }) => ({
     meta: loaderData
       ? [
-          { title: `${loaderData.member.firstName} ${loaderData.member.lastName} — COOPERNIK` },
+          { title: `${loaderData.member.firstName} ${loaderData.member.lastName} — Coopernic` },
           { name: "description", content: `${loaderData.member.role} chez ${loaderData.member.company}. ${loaderData.member.bio.slice(0, 140)}` },
         ]
       : [],

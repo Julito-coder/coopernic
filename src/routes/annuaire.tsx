@@ -7,7 +7,7 @@ export const Route = createFileRoute("/annuaire")({
   component: AnnuaireePage,
   head: () => ({
     meta: [
-      { title: "Annuaire des membres — COOPERNIK" },
+      { title: "Annuaire des membres — Coopernic" },
       { name: "description", content: "Explorez l'annuaire des membres du club : recherche, filtres par secteur et ville, vue carte." },
     ],
   }),
