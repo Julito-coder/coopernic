@@ -5,7 +5,7 @@ const navItems = [
   { to: "/", label: "Accueil" },
   { to: "/annuaire", label: "Annuaire" },
   { to: "/messages", label: "Messages" },
-  { to: "/recos", label: "Suivi recos" },
+  { to: "/recos", label: "Stats" },
 ] as const;
 
 export function AppHeader() {
