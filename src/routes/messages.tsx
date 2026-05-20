@@ -209,12 +209,6 @@ function MessagesPage() {
                         sub="Partager un membre"
                         onClick={() => { setAttachMenuOpen(false); setContactPickerOpen(true); }}
                       />
-                      <AttachOption
-                        icon={<Sparkles className="h-4 w-4 text-accent" />}
-                        label="Recommandation"
-                        sub="Envoyer une reco business"
-                        onClick={() => { setAttachMenuOpen(false); setRecoOpen(true); }}
-                      />
                     </div>
                   </>
                 )}
@@ -227,6 +221,16 @@ function MessagesPage() {
                   onChange={(e) => handleFiles(e.target.files)}
                 />
               </div>
+
+              <button
+                type="button"
+                onClick={() => setRecoOpen(true)}
+                className="flex h-10 items-center gap-1.5 rounded-xl border border-accent/40 bg-accent/10 px-3 text-xs font-bold text-accent transition-colors hover:bg-accent/20"
+                aria-label="Envoyer une recommandation"
+              >
+                <Sparkles className="h-4 w-4" />
+                Reco
+              </button>
 
               <textarea
                 value={drafts[activeId] ?? ""}
