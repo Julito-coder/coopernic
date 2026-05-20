@@ -3,42 +3,49 @@
 
 import { MEMBERS } from "./mock-data";
 
-export type RecoStatus = "envoyee" | "en_cours" | "rdv" | "gagnee" | "perdue";
+export type RecoStatus = "envoyee" | "contacte" | "rdv" | "deal" | "no_deal";
 
 export type Reco = {
   id: string;
-  fromMemberId: string;   // qui envoie la reco (ici "moi" = amelie-rousseau)
-  toMemberId: string;     // bénéficiaire (membre du club)
+  fromMemberId: string;
+  toMemberId: string;
   prospectName: string;
   prospectCompany: string;
-  prospectContact?: string; // email ou tel
+  prospectContact?: string;
   description: string;
   estimatedAmount?: number; // en €
+  commissionRate?: number;  // % reversé à l'apporteur (ex: 10 = 10%)
   status: RecoStatus;
   conversationId?: string;
-  createdAt: string; // ISO
-  updatedAt: string; // ISO
+  invoiceId?: string;       // id facture Stripe une fois générée
+  invoiceUrl?: string;      // hosted invoice URL
+  invoiceStatus?: "draft" | "sent" | "paid";
+  createdAt: string;
+  updatedAt: string;
 };
+
+export const STATUS_ORDER: RecoStatus[] = ["envoyee", "contacte", "rdv", "deal", "no_deal"];
 
 export const STATUS_LABEL: Record<RecoStatus, string> = {
   envoyee: "Envoyée",
-  en_cours: "En cours",
+  contacte: "Contacté",
   rdv: "RDV pris",
-  gagnee: "Deal gagné",
-  perdue: "Perdue",
+  deal: "Deal",
+  no_deal: "No deal",
 };
 
 export const STATUS_COLOR: Record<RecoStatus, string> = {
   envoyee: "bg-secondary text-foreground border-border",
-  en_cours: "bg-accent/15 text-accent border-accent/30",
+  contacte: "bg-accent/15 text-accent border-accent/30",
   rdv: "bg-primary/10 text-primary border-primary/20",
-  gagnee: "bg-success/15 text-success border-success/30",
-  perdue: "bg-destructive/10 text-destructive border-destructive/30",
+  deal: "bg-success/15 text-success border-success/30",
+  no_deal: "bg-destructive/10 text-destructive border-destructive/30",
 };
 
 export const CURRENT_USER_ID = "amelie-rousseau";
 
-const STORAGE_KEY = "coopernic.recos.v1";
+// Bumped to v2 — statuses & commission fields changed.
+const STORAGE_KEY = "coopernic.recos.v2";
 
 // Seed examples so the dashboard isn't empty on first load.
 const seed: Reco[] = [
@@ -63,7 +70,8 @@ const seed: Reco[] = [
     prospectCompany: "Dorel SaaS",
     description: "Refonte produit + cadrage série A.",
     estimatedAmount: 42000,
-    status: "gagnee",
+    status: "deal",
+    commissionRate: 10,
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 40).toISOString(),
     updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(),
   },
@@ -76,7 +84,7 @@ const seed: Reco[] = [
     prospectContact: "+33 6 22 33 44 55",
     description: "Lancement gamme premium, besoin branding & packaging.",
     estimatedAmount: 25000,
-    status: "en_cours",
+    status: "contacte",
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 6).toISOString(),
     updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
   },
@@ -131,6 +139,7 @@ export function addReco(input: Omit<Reco, "id" | "createdAt" | "updatedAt" | "fr
     prospectContact: input.prospectContact,
     description: input.description,
     estimatedAmount: input.estimatedAmount,
+    commissionRate: input.commissionRate,
     status: input.status,
     conversationId: input.conversationId,
     createdAt: now,
@@ -152,23 +161,39 @@ export function updateRecoStatus(id: string, status: RecoStatus) {
   emit();
 }
 
+export function updateReco(id: string, patch: Partial<Reco>) {
+  const list = getRecos().map((r) =>
+    r.id === id ? { ...r, ...patch, updatedAt: new Date().toISOString() } : r
+  );
+  cache = list;
+  persist(list);
+  emit();
+}
+
 export function computeStats(userId: string = CURRENT_USER_ID) {
   const all = getRecos();
   const sent = all.filter((r) => r.fromMemberId === userId);
   const received = all.filter((r) => r.toMemberId === userId);
-  const won = sent.filter((r) => r.status === "gagnee");
-  const wonReceived = received.filter((r) => r.status === "gagnee");
+  const wonSent = sent.filter((r) => r.status === "deal");
+  const wonReceived = received.filter((r) => r.status === "deal");
 
-  const caGenerated = won.reduce((s, r) => s + (r.estimatedAmount ?? 0), 0);
+  const caGenerated = wonSent.reduce((s, r) => s + (r.estimatedAmount ?? 0), 0);
   const caReceived = wonReceived.reduce((s, r) => s + (r.estimatedAmount ?? 0), 0);
-  const conversionRate = sent.length === 0 ? 0 : Math.round((won.length / sent.length) * 100);
+  const commissionsDue = wonReceived.reduce(
+    (s, r) => s + ((r.estimatedAmount ?? 0) * (r.commissionRate ?? 0)) / 100,
+    0
+  );
+  const commissionsToReceive = wonSent.reduce(
+    (s, r) => s + ((r.estimatedAmount ?? 0) * (r.commissionRate ?? 0)) / 100,
+    0
+  );
+  const conversionRate = sent.length === 0 ? 0 : Math.round((wonSent.length / sent.length) * 100);
 
-  // Leaderboard club entier
   const byMember = new Map<string, { sent: number; won: number; ca: number }>();
   for (const r of all) {
     const cur = byMember.get(r.fromMemberId) ?? { sent: 0, won: 0, ca: 0 };
     cur.sent += 1;
-    if (r.status === "gagnee") {
+    if (r.status === "deal") {
       cur.won += 1;
       cur.ca += r.estimatedAmount ?? 0;
     }
@@ -185,9 +210,12 @@ export function computeStats(userId: string = CURRENT_USER_ID) {
   return {
     sentCount: sent.length,
     receivedCount: received.length,
-    wonCount: won.length,
+    wonCount: wonSent.length,
+    wonReceivedCount: wonReceived.length,
     caGenerated,
     caReceived,
+    commissionsDue,
+    commissionsToReceive,
     conversionRate,
     leaderboard,
   };
