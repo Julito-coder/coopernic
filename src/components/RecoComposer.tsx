@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { addReco, STATUS_LABEL, type RecoStatus } from "@/lib/recos-store";
+import { addReco, STATUS_LABEL, type Reco, type RecoStatus } from "@/lib/recos-store";
 import type { Member } from "@/lib/mock-data";
 
 type Props = {
