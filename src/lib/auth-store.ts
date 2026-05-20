@@ -38,13 +38,14 @@ const slug = (s: string) =>
 
 function bootstrapClubs(): Club[] {
   const names = Array.from(new Set(MEMBERS.map((m) => m.club)));
-  return names.map((name) => {
+  return names.map((name, i) => {
     const sample = MEMBERS.find((m) => m.club === name)!;
     return {
       id: slug(name),
       name,
       city: sample.city,
       gestionnaireId: sample.id,
+      openToNetwork: i % 2 === 0, // 1 club sur 2 ouvert au réseau pour la démo
       createdAt: new Date().toISOString(),
     };
   });
