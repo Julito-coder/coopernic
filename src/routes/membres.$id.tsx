@@ -78,7 +78,7 @@ function MemberPage() {
           <Card title="À propos">
             <p className="leading-relaxed text-foreground/90">{member.bio}</p>
             <div className="mt-5 flex flex-wrap gap-1.5">
-              {member.tags.map((t) => (
+              {member.tags.map((t: string) => (
                 <span key={t} className="rounded-md bg-primary-soft px-2.5 py-1 text-xs font-semibold text-primary">
                   {t}
                 </span>
@@ -89,7 +89,7 @@ function MemberPage() {
           <div className="grid gap-6 md:grid-cols-2">
             <Card title="Recherche actuellement" accent="accent">
               <ul className="space-y-2.5">
-                {member.lookingFor.map((x) => (
+                {member.lookingFor.map((x: string) => (
                   <li key={x} className="flex gap-2.5 text-sm text-foreground/90">
                     <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
                     {x}
@@ -99,7 +99,7 @@ function MemberPage() {
             </Card>
             <Card title="Peut offrir" accent="success">
               <ul className="space-y-2.5">
-                {member.canOffer.map((x) => (
+                {member.canOffer.map((x: string) => (
                   <li key={x} className="flex gap-2.5 text-sm text-foreground/90">
                     <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-success" />
                     {x}
