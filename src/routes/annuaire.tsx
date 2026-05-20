@@ -194,8 +194,8 @@ function AnnuaireePage() {
               <MemberCard
                 key={m.id}
                 member={m}
-                clubBadge={scope === "network" ? m.club : undefined}
-                isExternal={scope === "network" && (!myClub || m.club !== myClub.name)}
+                clubBadge={effectiveScope === "network" ? m.club : undefined}
+                isExternal={effectiveScope === "network" && (!myClub || m.club !== myClub.name)}
               />
             ))}
           </div>
