@@ -9,11 +9,17 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as RecosRouteImport } from './routes/recos'
 import { Route as MessagesRouteImport } from './routes/messages'
 import { Route as AnnuaireRouteImport } from './routes/annuaire'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as MembresIdRouteImport } from './routes/membres.$id'
 
+const RecosRoute = RecosRouteImport.update({
+  id: '/recos',
+  path: '/recos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MessagesRoute = MessagesRouteImport.update({
   id: '/messages',
   path: '/messages',
@@ -39,12 +45,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/annuaire': typeof AnnuaireRoute
   '/messages': typeof MessagesRoute
+  '/recos': typeof RecosRoute
   '/membres/$id': typeof MembresIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/annuaire': typeof AnnuaireRoute
   '/messages': typeof MessagesRoute
+  '/recos': typeof RecosRoute
   '/membres/$id': typeof MembresIdRoute
 }
 export interface FileRoutesById {
@@ -52,25 +60,34 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/annuaire': typeof AnnuaireRoute
   '/messages': typeof MessagesRoute
+  '/recos': typeof RecosRoute
   '/membres/$id': typeof MembresIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/annuaire' | '/messages' | '/membres/$id'
+  fullPaths: '/' | '/annuaire' | '/messages' | '/recos' | '/membres/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/annuaire' | '/messages' | '/membres/$id'
-  id: '__root__' | '/' | '/annuaire' | '/messages' | '/membres/$id'
+  to: '/' | '/annuaire' | '/messages' | '/recos' | '/membres/$id'
+  id: '__root__' | '/' | '/annuaire' | '/messages' | '/recos' | '/membres/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AnnuaireRoute: typeof AnnuaireRoute
   MessagesRoute: typeof MessagesRoute
+  RecosRoute: typeof RecosRoute
   MembresIdRoute: typeof MembresIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/recos': {
+      id: '/recos'
+      path: '/recos'
+      fullPath: '/recos'
+      preLoaderRoute: typeof RecosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/messages': {
       id: '/messages'
       path: '/messages'
@@ -106,8 +123,19 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AnnuaireRoute: AnnuaireRoute,
   MessagesRoute: MessagesRoute,
+  RecosRoute: RecosRoute,
   MembresIdRoute: MembresIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
