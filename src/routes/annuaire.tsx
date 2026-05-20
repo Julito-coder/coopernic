@@ -208,14 +208,17 @@ function AnnuaireePage() {
 }
 
 function ScopeBtn({
-  active, onClick, icon, label, badge,
-}: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string; badge?: string }) {
+  active, onClick, icon, label, badge, disabled,
+}: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string; badge?: string; disabled?: boolean }) {
   return (
     <button
       onClick={onClick}
+      disabled={disabled}
       className={
         "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors " +
-        (active
+        (disabled
+          ? "cursor-not-allowed text-muted-foreground opacity-60"
+          : active
           ? "bg-accent text-accent-foreground"
           : "text-ink-muted hover:text-foreground")
       }
