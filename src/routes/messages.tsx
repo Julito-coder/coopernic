@@ -228,7 +228,6 @@ function MessagesPage() {
                 className="flex h-10 items-center gap-1.5 rounded-xl border border-accent/40 bg-accent/10 px-3 text-xs font-bold text-accent transition-colors hover:bg-accent/20"
                 aria-label="Envoyer une recommandation"
               >
-                <Sparkles className="h-4 w-4" />
                 Reco
               </button>
 
