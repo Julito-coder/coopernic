@@ -106,7 +106,7 @@ function RootComponent() {
         </main>
         <footer className="border-t border-border/60 bg-surface">
           <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-6 py-6 text-xs text-muted-foreground md:flex-row">
-            <div>© {new Date().getFullYear()} COOPERNIK · Tous droits réservés</div>
+            <div>© {new Date().getFullYear()} Coopernic · Tous droits réservés</div>
             <div className="flex gap-4">
               <a href="#" className="hover:text-foreground">Mentions légales</a>
               <a href="#" className="hover:text-foreground">Confidentialité</a>

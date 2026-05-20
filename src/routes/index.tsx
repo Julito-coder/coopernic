@@ -5,7 +5,7 @@ export const Route = createFileRoute("/")({
   component: Index,
   head: () => ({
     meta: [
-      { title: "Accueil — COOPERNIK" },
+      { title: "Accueil — Coopernic" },
       { name: "description", content: "Tableau de bord membre : annuaire, messagerie, business tracking." },
     ],
   }),
@@ -33,7 +33,7 @@ function Index() {
               </span>
             </h1>
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-white/75">
-              COOPERNIK donne aux clubs business une plateforme moderne pour activer
+              Coopernic donne aux clubs business une plateforme moderne pour activer
               leurs membres, mesurer l'impact des recommandations et faire grandir
               le chiffre d'affaires collectif.
             </p>
@@ -155,7 +155,7 @@ function Index() {
           <div className="text-xs font-bold uppercase tracking-[0.2em] text-white/60">
             Roadmap V1
           </div>
-          <h3 className="mt-2 font-display text-xl font-bold">Bientôt sur COOPERNIK</h3>
+          <h3 className="mt-2 font-display text-xl font-bold">Bientôt sur Coopernic</h3>
           <ul className="mt-5 space-y-3 text-sm">
             {[
               { p: "Phase 2", t: "Page publique du club" },

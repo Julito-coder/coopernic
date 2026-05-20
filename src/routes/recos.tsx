@@ -17,7 +17,7 @@ export const Route = createFileRoute("/recos")({
   component: StatsPage,
   head: () => ({
     meta: [
-      { title: "Stats — COOPERNIK" },
+      { title: "Stats — Coopernic" },
       { name: "description", content: "Stats des recommandations envoyées et reçues, commissions et factures." },
     ],
   }),
