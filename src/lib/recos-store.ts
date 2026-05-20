@@ -3,42 +3,49 @@
 
 import { MEMBERS } from "./mock-data";
 
-export type RecoStatus = "envoyee" | "en_cours" | "rdv" | "gagnee" | "perdue";
+export type RecoStatus = "envoyee" | "contacte" | "rdv" | "deal" | "no_deal";
 
 export type Reco = {
   id: string;
-  fromMemberId: string;   // qui envoie la reco (ici "moi" = amelie-rousseau)
-  toMemberId: string;     // bénéficiaire (membre du club)
+  fromMemberId: string;
+  toMemberId: string;
   prospectName: string;
   prospectCompany: string;
-  prospectContact?: string; // email ou tel
+  prospectContact?: string;
   description: string;
   estimatedAmount?: number; // en €
+  commissionRate?: number;  // % reversé à l'apporteur (ex: 10 = 10%)
   status: RecoStatus;
   conversationId?: string;
-  createdAt: string; // ISO
-  updatedAt: string; // ISO
+  invoiceId?: string;       // id facture Stripe une fois générée
+  invoiceUrl?: string;      // hosted invoice URL
+  invoiceStatus?: "draft" | "sent" | "paid";
+  createdAt: string;
+  updatedAt: string;
 };
+
+export const STATUS_ORDER: RecoStatus[] = ["envoyee", "contacte", "rdv", "deal", "no_deal"];
 
 export const STATUS_LABEL: Record<RecoStatus, string> = {
   envoyee: "Envoyée",
-  en_cours: "En cours",
+  contacte: "Contacté",
   rdv: "RDV pris",
-  gagnee: "Deal gagné",
-  perdue: "Perdue",
+  deal: "Deal",
+  no_deal: "No deal",
 };
 
 export const STATUS_COLOR: Record<RecoStatus, string> = {
   envoyee: "bg-secondary text-foreground border-border",
-  en_cours: "bg-accent/15 text-accent border-accent/30",
+  contacte: "bg-accent/15 text-accent border-accent/30",
   rdv: "bg-primary/10 text-primary border-primary/20",
-  gagnee: "bg-success/15 text-success border-success/30",
-  perdue: "bg-destructive/10 text-destructive border-destructive/30",
+  deal: "bg-success/15 text-success border-success/30",
+  no_deal: "bg-destructive/10 text-destructive border-destructive/30",
 };
 
 export const CURRENT_USER_ID = "amelie-rousseau";
 
-const STORAGE_KEY = "coopernic.recos.v1";
+// Bumped to v2 — statuses & commission fields changed.
+const STORAGE_KEY = "coopernic.recos.v2";
 
 // Seed examples so the dashboard isn't empty on first load.
 const seed: Reco[] = [
