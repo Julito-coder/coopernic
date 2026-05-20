@@ -11,7 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RecosRouteImport } from './routes/recos'
 import { Route as MessagesRouteImport } from './routes/messages'
+import { Route as ClubRouteImport } from './routes/club'
 import { Route as AnnuaireRouteImport } from './routes/annuaire'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as MembresIdRouteImport } from './routes/membres.$id'
 
@@ -25,9 +27,19 @@ const MessagesRoute = MessagesRouteImport.update({
   path: '/messages',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ClubRoute = ClubRouteImport.update({
+  id: '/club',
+  path: '/club',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AnnuaireRoute = AnnuaireRouteImport.update({
   id: '/annuaire',
   path: '/annuaire',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -43,14 +55,18 @@ const MembresIdRoute = MembresIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/annuaire': typeof AnnuaireRoute
+  '/club': typeof ClubRoute
   '/messages': typeof MessagesRoute
   '/recos': typeof RecosRoute
   '/membres/$id': typeof MembresIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/annuaire': typeof AnnuaireRoute
+  '/club': typeof ClubRoute
   '/messages': typeof MessagesRoute
   '/recos': typeof RecosRoute
   '/membres/$id': typeof MembresIdRoute
@@ -58,22 +74,48 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/annuaire': typeof AnnuaireRoute
+  '/club': typeof ClubRoute
   '/messages': typeof MessagesRoute
   '/recos': typeof RecosRoute
   '/membres/$id': typeof MembresIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/annuaire' | '/messages' | '/recos' | '/membres/$id'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/annuaire'
+    | '/club'
+    | '/messages'
+    | '/recos'
+    | '/membres/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/annuaire' | '/messages' | '/recos' | '/membres/$id'
-  id: '__root__' | '/' | '/annuaire' | '/messages' | '/recos' | '/membres/$id'
+  to:
+    | '/'
+    | '/admin'
+    | '/annuaire'
+    | '/club'
+    | '/messages'
+    | '/recos'
+    | '/membres/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/annuaire'
+    | '/club'
+    | '/messages'
+    | '/recos'
+    | '/membres/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
   AnnuaireRoute: typeof AnnuaireRoute
+  ClubRoute: typeof ClubRoute
   MessagesRoute: typeof MessagesRoute
   RecosRoute: typeof RecosRoute
   MembresIdRoute: typeof MembresIdRoute
@@ -95,11 +137,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MessagesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/club': {
+      id: '/club'
+      path: '/club'
+      fullPath: '/club'
+      preLoaderRoute: typeof ClubRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/annuaire': {
       id: '/annuaire'
       path: '/annuaire'
       fullPath: '/annuaire'
       preLoaderRoute: typeof AnnuaireRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -121,7 +177,9 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
   AnnuaireRoute: AnnuaireRoute,
+  ClubRoute: ClubRoute,
   MessagesRoute: MessagesRoute,
   RecosRoute: RecosRoute,
   MembresIdRoute: MembresIdRoute,
