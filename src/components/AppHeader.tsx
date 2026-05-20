@@ -50,7 +50,7 @@ export function AppHeader() {
             className="h-10 w-10 rounded-[10px] object-cover shadow-sm ring-1 ring-border/60 transition-transform group-hover:scale-105"
           />
           <div className="leading-tight">
-            <div className="font-display text-[17px] font-extrabold tracking-tight text-primary">
+            <div className="font-display text-[17px] font-extrabold tracking-tight text-foreground">
               coopern<span className="text-accent">i</span>c
             </div>
             <div className="text-[9px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
