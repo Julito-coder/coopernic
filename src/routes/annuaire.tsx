@@ -10,7 +10,7 @@ import {
   getClub,
   listClubs,
 } from "@/lib/auth-store";
-import { Globe2, Users } from "lucide-react";
+import { Globe2, Users, Lock } from "lucide-react";
 
 export const Route = createFileRoute("/annuaire")({
   component: AnnuaireePage,
