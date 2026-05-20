@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { addReco, STATUS_LABEL, type RecoStatus } from "@/lib/recos-store";
+import { addReco, STATUS_LABEL, type Reco, type RecoStatus } from "@/lib/recos-store";
 import type { Member } from "@/lib/mock-data";
 
 type Props = {
@@ -7,7 +7,7 @@ type Props = {
   conversationId?: string;
   open: boolean;
   onClose: () => void;
-  onSent?: (summary: string) => void;
+  onSent?: (reco: Reco) => void;
 };
 
 export function RecoComposer({ toMember, conversationId, open, onClose, onSent }: Props) {
@@ -35,11 +35,7 @@ export function RecoComposer({ toMember, conversationId, open, onClose, onSent }
       status,
       conversationId,
     });
-    const summary =
-      `🤝 Recommandation envoyée — ${reco.prospectName} (${reco.prospectCompany})` +
-      (reco.estimatedAmount ? ` · ~${reco.estimatedAmount.toLocaleString("fr-FR")} €` : "") +
-      `\n${reco.description}`;
-    onSent?.(summary);
+    onSent?.(reco);
     // reset
     setProspectName(""); setProspectCompany(""); setProspectContact("");
     setDescription(""); setAmount(""); setStatus("envoyee");

@@ -211,11 +211,25 @@ export type ConversationPreview = {
   unread: number;
 };
 
+export type MessageAttachment =
+  | { kind: "photo"; url: string; name?: string }
+  | { kind: "contact"; memberId: string }
+  | {
+      kind: "reco";
+      recoId: string;
+      prospectName: string;
+      prospectCompany: string;
+      description: string;
+      estimatedAmount?: number;
+      status: string;
+    };
+
 export type Message = {
   id: string;
   from: "me" | "them";
-  text: string;
+  text?: string;
   at: string;
+  attachment?: MessageAttachment;
 };
 
 export const CONVERSATIONS: ConversationPreview[] = [
