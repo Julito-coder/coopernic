@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import logoMark from "@/assets/coopernic-mark.png";
 
 const navItems = [
   { to: "/", label: "Accueil" },
@@ -8,18 +9,20 @@ const navItems = [
 
 export function AppHeader() {
   return (
-    <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
-        <Link to="/" className="group flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm transition-transform group-hover:rotate-3">
-            <span className="font-display text-lg font-black">C</span>
-          </div>
+        <Link to="/" className="group flex items-center gap-3">
+          <img
+            src={logoMark}
+            alt="Coopernic"
+            className="h-10 w-10 rounded-[10px] object-cover shadow-sm ring-1 ring-border/60 transition-transform group-hover:scale-105"
+          />
           <div className="leading-tight">
-            <div className="font-display text-base font-extrabold tracking-tight text-primary">
-              COOPERNIK
+            <div className="font-display text-[17px] font-extrabold tracking-tight text-primary">
+              coopern<span className="text-accent">i</span>c
             </div>
-            <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-              Cercle Vendôme
+            <div className="text-[9px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+              Échangez · Collaborez · Développez
             </div>
           </div>
         </Link>
@@ -44,9 +47,9 @@ export function AppHeader() {
         <div className="flex items-center gap-3">
           <div className="hidden text-right md:block">
             <div className="text-sm font-semibold text-foreground">Amélie R.</div>
-            <div className="text-xs text-muted-foreground">Membre actif</div>
+            <div className="text-xs text-muted-foreground">Cercle Vendôme</div>
           </div>
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-accent to-primary text-sm font-bold text-primary-foreground shadow-sm">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sm font-bold text-accent shadow-sm ring-1 ring-border">
             AR
           </div>
         </div>
