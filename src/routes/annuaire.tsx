@@ -10,7 +10,7 @@ import {
   getClub,
   listClubs,
 } from "@/lib/auth-store";
-import { Globe2, Users } from "lucide-react";
+import { Globe2, Users, Lock } from "lucide-react";
 
 export const Route = createFileRoute("/annuaire")({
   component: AnnuaireePage,
@@ -33,10 +33,14 @@ function AnnuaireePage() {
   const [sector, setSector] = useState<string>("");
   const [city, setCity] = useState<string>("");
   const [view, setView] = useState<View>("grid");
+
+  // Règle : réciprocité. Un club privé ne voit pas le réseau et n'y figure pas.
+  const canSeeNetwork = !myClub || myClub.openToNetwork || session.role === "superadmin";
   const [scope, setScope] = useState<Scope>(myClub ? "club" : "network");
+  const effectiveScope: Scope = scope === "network" && !canSeeNetwork ? "club" : scope;
 
   const base = useMemo<Member[]>(() => {
-    if (scope === "club" && myClub) {
+    if (effectiveScope === "club" && myClub) {
       return membersOfClub(myClub.name);
     }
     // Réseau : tous les membres dont le club a opté pour l'annuaire global
@@ -47,8 +51,8 @@ function AnnuaireePage() {
       const seen = new Set(net.map((m) => m.id));
       return [...own.filter((m) => !seen.has(m.id)), ...net];
     }
-    return scope === "network" ? net : allMembers();
-  }, [scope, myClub?.id]);
+    return effectiveScope === "network" ? net : allMembers();
+  }, [effectiveScope, myClub?.id, myClub?.openToNetwork]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -76,12 +80,12 @@ function AnnuaireePage() {
         <div>
           <div className="text-xs font-bold uppercase tracking-[0.2em] text-accent">Annuaire</div>
           <h1 className="mt-2 font-display text-4xl font-extrabold tracking-tight text-foreground md:text-5xl">
-            {scope === "club" && myClub
+            {effectiveScope === "club" && myClub
               ? `${filtered.length} membre${filtered.length > 1 ? "s" : ""} dans ${myClub.name}`
               : `Trouver quelqu'un dans l'annuaire Coopernic`}
           </h1>
           <p className="mt-2 max-w-2xl text-ink-muted">
-            {scope === "club"
+            {effectiveScope === "club"
               ? "Cherchez par nom, entreprise, secteur ou expertise au sein de votre club."
               : `Découvrez les membres des ${openClubsCount} club${openClubsCount > 1 ? "s" : ""} ouverts au réseau Coopernic.`}
           </p>
@@ -106,22 +110,32 @@ function AnnuaireePage() {
       </div>
 
       {/* Scope switch */}
-      <div className="mt-6 inline-flex rounded-xl border border-border bg-surface p-1 shadow-card">
-        {myClub && (
+      <div className="mt-6 flex flex-wrap items-center gap-3">
+        <div className="inline-flex rounded-xl border border-border bg-surface p-1 shadow-card">
+          {myClub && (
+            <ScopeBtn
+              active={effectiveScope === "club"}
+              onClick={() => setScope("club")}
+              icon={<Users className="h-4 w-4" />}
+              label={`Mon club · ${myClub.name}`}
+            />
+          )}
           <ScopeBtn
-            active={scope === "club"}
-            onClick={() => setScope("club")}
-            icon={<Users className="h-4 w-4" />}
-            label={`Mon club · ${myClub.name}`}
+            active={effectiveScope === "network"}
+            disabled={!canSeeNetwork}
+            onClick={() => canSeeNetwork && setScope("network")}
+            icon={canSeeNetwork ? <Globe2 className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+            label="Réseau Coopernic"
+            badge={canSeeNetwork ? `${openClubsCount} clubs` : undefined}
           />
+        </div>
+        {!canSeeNetwork && myClub && (
+          <p className="text-xs text-ink-muted">
+            Club privé : pour voir les autres membres du réseau, active l'annuaire inter-clubs depuis{" "}
+            <Link to="/club" className="font-semibold text-accent underline">la page de ton club</Link>.
+            La visibilité est réciproque.
+          </p>
         )}
-        <ScopeBtn
-          active={scope === "network"}
-          onClick={() => setScope("network")}
-          icon={<Globe2 className="h-4 w-4" />}
-          label="Réseau Coopernic"
-          badge={`${openClubsCount} clubs`}
-        />
       </div>
 
       {/* Filters */}
@@ -180,8 +194,8 @@ function AnnuaireePage() {
               <MemberCard
                 key={m.id}
                 member={m}
-                clubBadge={scope === "network" ? m.club : undefined}
-                isExternal={scope === "network" && (!myClub || m.club !== myClub.name)}
+                clubBadge={effectiveScope === "network" ? m.club : undefined}
+                isExternal={effectiveScope === "network" && (!myClub || m.club !== myClub.name)}
               />
             ))}
           </div>
@@ -194,14 +208,17 @@ function AnnuaireePage() {
 }
 
 function ScopeBtn({
-  active, onClick, icon, label, badge,
-}: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string; badge?: string }) {
+  active, onClick, icon, label, badge, disabled,
+}: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string; badge?: string; disabled?: boolean }) {
   return (
     <button
       onClick={onClick}
+      disabled={disabled}
       className={
         "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors " +
-        (active
+        (disabled
+          ? "cursor-not-allowed text-muted-foreground opacity-60"
+          : active
           ? "bg-accent text-accent-foreground"
           : "text-ink-muted hover:text-foreground")
       }
