@@ -7,10 +7,12 @@ import {
   addMember,
   removeMember,
   setGestionnaire,
+  setClubOpenToNetwork,
 } from "@/lib/auth-store";
 import { SECTORS, CITIES } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -25,7 +27,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { Trash2, UserPlus, Crown, ShieldCheck } from "lucide-react";
+import { Trash2, UserPlus, Crown, ShieldCheck, Globe2 } from "lucide-react";
 
 type Search = { id?: string };
 
