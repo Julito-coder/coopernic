@@ -17,6 +17,7 @@ import { Route as AnnuaireRouteImport } from './routes/annuaire'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as MembresIdRouteImport } from './routes/membres.$id'
+import { Route as AuthSetPasswordRouteImport } from './routes/auth.set-password'
 
 const RecosRoute = RecosRouteImport.update({
   id: '/recos',
@@ -58,6 +59,11 @@ const MembresIdRoute = MembresIdRouteImport.update({
   path: '/membres/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthSetPasswordRoute = AuthSetPasswordRouteImport.update({
+  id: '/auth/set-password',
+  path: '/auth/set-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -67,6 +73,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/messages': typeof MessagesRoute
   '/recos': typeof RecosRoute
+  '/auth/set-password': typeof AuthSetPasswordRoute
   '/membres/$id': typeof MembresIdRoute
 }
 export interface FileRoutesByTo {
@@ -77,6 +84,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/messages': typeof MessagesRoute
   '/recos': typeof RecosRoute
+  '/auth/set-password': typeof AuthSetPasswordRoute
   '/membres/$id': typeof MembresIdRoute
 }
 export interface FileRoutesById {
@@ -88,6 +96,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/messages': typeof MessagesRoute
   '/recos': typeof RecosRoute
+  '/auth/set-password': typeof AuthSetPasswordRoute
   '/membres/$id': typeof MembresIdRoute
 }
 export interface FileRouteTypes {
@@ -100,6 +109,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/messages'
     | '/recos'
+    | '/auth/set-password'
     | '/membres/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -110,6 +120,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/messages'
     | '/recos'
+    | '/auth/set-password'
     | '/membres/$id'
   id:
     | '__root__'
@@ -120,6 +131,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/messages'
     | '/recos'
+    | '/auth/set-password'
     | '/membres/$id'
   fileRoutesById: FileRoutesById
 }
@@ -131,6 +143,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   MessagesRoute: typeof MessagesRoute
   RecosRoute: typeof RecosRoute
+  AuthSetPasswordRoute: typeof AuthSetPasswordRoute
   MembresIdRoute: typeof MembresIdRoute
 }
 
@@ -192,6 +205,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MembresIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/set-password': {
+      id: '/auth/set-password'
+      path: '/auth/set-password'
+      fullPath: '/auth/set-password'
+      preLoaderRoute: typeof AuthSetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -203,6 +223,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   MessagesRoute: MessagesRoute,
   RecosRoute: RecosRoute,
+  AuthSetPasswordRoute: AuthSetPasswordRoute,
   MembresIdRoute: MembresIdRoute,
 }
 export const routeTree = rootRouteImport
