@@ -4,7 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const InviteSchema = z.object({
-  clubId: z.string().uuid(),
+  clubId: z.string().min(1).max(64),
   email: z.string().email().max(255),
   firstName: z.string().min(1).max(100),
   lastName: z.string().min(1).max(100),
