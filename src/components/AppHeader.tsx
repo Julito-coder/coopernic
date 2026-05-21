@@ -120,8 +120,18 @@ export function AppHeader() {
               </DropdownMenuSubContent>
             </DropdownMenuSub>
             <DropdownMenuSeparator />
+            {real.user ? (
+              <DropdownMenuItem onClick={() => signOut()}>
+                <LogOut className="mr-2 h-4 w-4" /> Se déconnecter ({real.user.email})
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem asChild>
+                <Link to="/login"><LogIn className="mr-2 h-4 w-4" /> Connexion réelle</Link>
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
             <DropdownMenuLabel className="text-[10px] font-normal text-muted-foreground">
-              Switch de démo · l'auth réelle arrive avec Cloud
+              Switch de démo · auth réelle disponible via "Connexion"
             </DropdownMenuLabel>
           </DropdownMenuContent>
         </DropdownMenu>
