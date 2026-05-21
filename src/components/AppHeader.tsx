@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import logoMark from "@/assets/coopernic-mark.png";
 import { useAuth, loginAs, allMembers, type Role } from "@/lib/auth-store";
+import { useSession, signOut } from "@/lib/use-session";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,7 +14,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, ShieldCheck, Crown, User } from "lucide-react";
+import { ChevronDown, ShieldCheck, Crown, User, LogIn, LogOut } from "lucide-react";
 
 const baseNav = [
   { to: "/", label: "Accueil", roles: ["superadmin", "gestionnaire", "membre"] as Role[] },
@@ -32,9 +33,9 @@ const ROLE_META: Record<Role, { label: string; icon: typeof User; tone: string }
 
 export function AppHeader() {
   const { session } = useAuth();
+  const real = useSession();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
-  // Avant hydratation : on n'affiche que les items publics pour éviter un mismatch SSR/localStorage.
   const effectiveRole: Role = mounted ? session.role : "membre";
   const items = baseNav.filter((n) => n.roles.includes(effectiveRole));
   const RoleIcon = ROLE_META[session.role].icon;
@@ -119,8 +120,18 @@ export function AppHeader() {
               </DropdownMenuSubContent>
             </DropdownMenuSub>
             <DropdownMenuSeparator />
+            {real.user ? (
+              <DropdownMenuItem onClick={() => signOut()}>
+                <LogOut className="mr-2 h-4 w-4" /> Se déconnecter ({real.user.email})
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem asChild>
+                <Link to="/login"><LogIn className="mr-2 h-4 w-4" /> Connexion réelle</Link>
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
             <DropdownMenuLabel className="text-[10px] font-normal text-muted-foreground">
-              Switch de démo · l'auth réelle arrive avec Cloud
+              Switch de démo · auth réelle disponible via "Connexion"
             </DropdownMenuLabel>
           </DropdownMenuContent>
         </DropdownMenu>

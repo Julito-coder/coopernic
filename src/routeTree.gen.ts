@@ -11,11 +11,13 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RecosRouteImport } from './routes/recos'
 import { Route as MessagesRouteImport } from './routes/messages'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as ClubRouteImport } from './routes/club'
 import { Route as AnnuaireRouteImport } from './routes/annuaire'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as MembresIdRouteImport } from './routes/membres.$id'
+import { Route as AuthSetPasswordRouteImport } from './routes/auth.set-password'
 
 const RecosRoute = RecosRouteImport.update({
   id: '/recos',
@@ -25,6 +27,11 @@ const RecosRoute = RecosRouteImport.update({
 const MessagesRoute = MessagesRouteImport.update({
   id: '/messages',
   path: '/messages',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ClubRoute = ClubRouteImport.update({
@@ -52,14 +59,21 @@ const MembresIdRoute = MembresIdRouteImport.update({
   path: '/membres/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthSetPasswordRoute = AuthSetPasswordRouteImport.update({
+  id: '/auth/set-password',
+  path: '/auth/set-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/annuaire': typeof AnnuaireRoute
   '/club': typeof ClubRoute
+  '/login': typeof LoginRoute
   '/messages': typeof MessagesRoute
   '/recos': typeof RecosRoute
+  '/auth/set-password': typeof AuthSetPasswordRoute
   '/membres/$id': typeof MembresIdRoute
 }
 export interface FileRoutesByTo {
@@ -67,8 +81,10 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/annuaire': typeof AnnuaireRoute
   '/club': typeof ClubRoute
+  '/login': typeof LoginRoute
   '/messages': typeof MessagesRoute
   '/recos': typeof RecosRoute
+  '/auth/set-password': typeof AuthSetPasswordRoute
   '/membres/$id': typeof MembresIdRoute
 }
 export interface FileRoutesById {
@@ -77,8 +93,10 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/annuaire': typeof AnnuaireRoute
   '/club': typeof ClubRoute
+  '/login': typeof LoginRoute
   '/messages': typeof MessagesRoute
   '/recos': typeof RecosRoute
+  '/auth/set-password': typeof AuthSetPasswordRoute
   '/membres/$id': typeof MembresIdRoute
 }
 export interface FileRouteTypes {
@@ -88,8 +106,10 @@ export interface FileRouteTypes {
     | '/admin'
     | '/annuaire'
     | '/club'
+    | '/login'
     | '/messages'
     | '/recos'
+    | '/auth/set-password'
     | '/membres/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -97,8 +117,10 @@ export interface FileRouteTypes {
     | '/admin'
     | '/annuaire'
     | '/club'
+    | '/login'
     | '/messages'
     | '/recos'
+    | '/auth/set-password'
     | '/membres/$id'
   id:
     | '__root__'
@@ -106,8 +128,10 @@ export interface FileRouteTypes {
     | '/admin'
     | '/annuaire'
     | '/club'
+    | '/login'
     | '/messages'
     | '/recos'
+    | '/auth/set-password'
     | '/membres/$id'
   fileRoutesById: FileRoutesById
 }
@@ -116,8 +140,10 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   AnnuaireRoute: typeof AnnuaireRoute
   ClubRoute: typeof ClubRoute
+  LoginRoute: typeof LoginRoute
   MessagesRoute: typeof MessagesRoute
   RecosRoute: typeof RecosRoute
+  AuthSetPasswordRoute: typeof AuthSetPasswordRoute
   MembresIdRoute: typeof MembresIdRoute
 }
 
@@ -135,6 +161,13 @@ declare module '@tanstack/react-router' {
       path: '/messages'
       fullPath: '/messages'
       preLoaderRoute: typeof MessagesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/club': {
@@ -172,6 +205,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MembresIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/set-password': {
+      id: '/auth/set-password'
+      path: '/auth/set-password'
+      fullPath: '/auth/set-password'
+      preLoaderRoute: typeof AuthSetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -180,8 +220,10 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   AnnuaireRoute: AnnuaireRoute,
   ClubRoute: ClubRoute,
+  LoginRoute: LoginRoute,
   MessagesRoute: MessagesRoute,
   RecosRoute: RecosRoute,
+  AuthSetPasswordRoute: AuthSetPasswordRoute,
   MembresIdRoute: MembresIdRoute,
 }
 export const routeTree = rootRouteImport
