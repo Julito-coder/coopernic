@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import logoMark from "@/assets/coopernic-mark.png";
 import { useAuth, loginAs, allMembers, type Role } from "@/lib/auth-store";
+import { useSession, signOut } from "@/lib/use-session";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,7 +14,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, ShieldCheck, Crown, User } from "lucide-react";
+import { ChevronDown, ShieldCheck, Crown, User, LogIn, LogOut } from "lucide-react";
 
 const baseNav = [
   { to: "/", label: "Accueil", roles: ["superadmin", "gestionnaire", "membre"] as Role[] },
