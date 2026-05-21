@@ -33,9 +33,9 @@ const ROLE_META: Record<Role, { label: string; icon: typeof User; tone: string }
 
 export function AppHeader() {
   const { session } = useAuth();
+  const real = useSession();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
-  // Avant hydratation : on n'affiche que les items publics pour éviter un mismatch SSR/localStorage.
   const effectiveRole: Role = mounted ? session.role : "membre";
   const items = baseNav.filter((n) => n.roles.includes(effectiveRole));
   const RoleIcon = ROLE_META[session.role].icon;
