@@ -38,8 +38,9 @@ export function AppHeader() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const effectiveRole: Role = mounted ? session.role : "membre";
+  const effectiveDisplayName = mounted ? session.displayName : "Membre";
   const items = baseNav.filter((n) => n.roles.includes(effectiveRole));
-  const RoleIcon = ROLE_META[session.role].icon;
+  const RoleIcon = ROLE_META[effectiveRole].icon;
   const members = allMembers();
 
   return (
@@ -80,13 +81,13 @@ export function AppHeader() {
 
         <DropdownMenu>
           <DropdownMenuTrigger className="flex items-center gap-2 rounded-full border border-border/60 bg-card py-1.5 pl-2 pr-3 text-left transition-colors hover:bg-secondary">
-            <div className={`flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-bold text-accent ring-1 ring-border ${ROLE_META[session.role].tone}`}>
+            <div className={`flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-bold text-accent ring-1 ring-border ${ROLE_META[effectiveRole].tone}`}>
               <RoleIcon className="h-4 w-4" />
             </div>
             <div className="hidden leading-tight md:block">
-              <div className="text-xs font-semibold text-foreground">{session.displayName}</div>
+              <div className="text-xs font-semibold text-foreground">{effectiveDisplayName}</div>
               <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                {ROLE_META[session.role].label}
+                {ROLE_META[effectiveRole].label}
               </div>
             </div>
             <ChevronDown className="h-4 w-4 text-muted-foreground" />
