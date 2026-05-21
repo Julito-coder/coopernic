@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { createStripeClient, type StripeEnv } from "@/lib/stripe.server";
 
 // ---------- LIST pots for a club ----------
 export const listPots = createServerFn({ method: "GET" })
@@ -185,4 +186,113 @@ export const getPotDetail = createServerFn({ method: "GET" })
       isParticipant: participants.some((p) => p.member_id === userId),
       hasPaid: payments.some((p) => p.member_id === userId && p.status === "paid"),
     };
+  });
+
+// ---------- CREATE Stripe Checkout session for a pot share ----------
+export const createPotCheckout = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        potId: z.string().uuid(),
+        returnUrl: z.string().url(),
+        environment: z.enum(["sandbox", "live"]),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
+    // Load pot + participant set
+    const [potRes, partRes, payRes, memberRes] = await Promise.all([
+      supabase.from("pots").select("*").eq("id", data.potId).single(),
+      supabase.from("pot_participants").select("member_id").eq("pot_id", data.potId),
+      supabase
+        .from("pot_payments")
+        .select("member_id, status")
+        .eq("pot_id", data.potId),
+      supabase.from("members").select("email, first_name, last_name").eq("id", userId).maybeSingle(),
+    ]);
+    if (potRes.error) throw new Error(potRes.error.message);
+    const pot = potRes.data;
+    if (pot.status !== "open") throw new Error("Cette cagnotte n'est plus ouverte.");
+
+    const participants = partRes.data ?? [];
+    const isParticipant = participants.some((p) => p.member_id === userId);
+    if (!isParticipant) throw new Error("Inscris-toi d'abord à la cagnotte.");
+
+    const existing = (payRes.data ?? []).find((p) => p.member_id === userId);
+    if (existing?.status === "paid") throw new Error("Tu as déjà payé ta part.");
+
+    const shareCents = Math.ceil(pot.goal_cents / Math.max(participants.length, 1));
+    if (shareCents < 50) throw new Error("Le montant par part doit être ≥ 0,50 €.");
+
+    const stripe = createStripeClient(data.environment as StripeEnv);
+
+    // Resolve or create Stripe customer with userId metadata (searchable)
+    let customerId: string | undefined;
+    if (/^[a-zA-Z0-9-]+$/.test(userId)) {
+      const found = await stripe.customers.search({
+        query: `metadata['userId']:'${userId}'`,
+        limit: 1,
+      });
+      if (found.data.length) customerId = found.data[0].id;
+    }
+    const email = memberRes.data?.email;
+    if (!customerId && email) {
+      const list = await stripe.customers.list({ email, limit: 1 });
+      if (list.data.length) {
+        customerId = list.data[0].id;
+        await stripe.customers.update(customerId, {
+          metadata: { ...list.data[0].metadata, userId },
+        });
+      }
+    }
+    if (!customerId) {
+      const created = await stripe.customers.create({
+        ...(email && { email }),
+        metadata: { userId },
+      });
+      customerId = created.id;
+    }
+
+    const description = `Cagnotte: ${pot.title}`;
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      ui_mode: "embedded_page",
+      return_url: data.returnUrl,
+      customer: customerId,
+      line_items: [
+        {
+          price_data: {
+            currency: "eur",
+            product_data: { name: description },
+            unit_amount: shareCents,
+          },
+          quantity: 1,
+        },
+      ],
+      payment_intent_data: { description },
+      metadata: {
+        userId,
+        pot_id: pot.id,
+        club_id: pot.club_id,
+      },
+      // Full Stripe compliance handling (+3.5%) — not yet typed in SDK 22
+      managed_payments: { enabled: true },
+    } as any);
+
+    // Upsert pending pot_payment with session id
+    await supabase.from("pot_payments").upsert(
+      {
+        pot_id: pot.id,
+        member_id: userId,
+        amount_cents: shareCents,
+        stripe_session_id: session.id,
+        status: "pending",
+      },
+      { onConflict: "pot_id,member_id" },
+    );
+
+    return { clientSecret: session.client_secret };
   });
