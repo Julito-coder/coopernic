@@ -292,10 +292,11 @@ function AddMemberForm({ clubId, clubName }: { clubId: string; clubName: string 
           <Input placeholder="Email" type="email" value={form.email} onChange={(e) => set("email")(e.target.value)} />
           <Input placeholder="Téléphone" value={form.phone} onChange={(e) => set("phone")(e.target.value)} />
           <div className="sm:col-span-2 lg:col-span-4">
-            <Button type="submit" className="gap-2">
-              <UserPlus className="h-4 w-4" /> Ajouter au club
+            <Button type="submit" className="gap-2" disabled={loading}>
+              <UserPlus className="h-4 w-4" /> {loading ? "Envoi…" : "Inviter au club"}
             </Button>
           </div>
+
         </form>
       </CardContent>
     </Card>
