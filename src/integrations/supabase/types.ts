@@ -14,16 +14,155 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      clubs: {
+        Row: {
+          city: string
+          created_at: string
+          gestionnaire_id: string | null
+          id: string
+          name: string
+          open_to_network: boolean
+          updated_at: string
+        }
+        Insert: {
+          city: string
+          created_at?: string
+          gestionnaire_id?: string | null
+          id?: string
+          name: string
+          open_to_network?: boolean
+          updated_at?: string
+        }
+        Update: {
+          city?: string
+          created_at?: string
+          gestionnaire_id?: string | null
+          id?: string
+          name?: string
+          open_to_network?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      members: {
+        Row: {
+          activated_at: string | null
+          bio: string | null
+          can_offer: string[] | null
+          city: string | null
+          club_id: string | null
+          company: string | null
+          created_at: string
+          email: string
+          first_name: string
+          id: string
+          invited_at: string | null
+          last_name: string
+          looking_for: string[] | null
+          phone: string | null
+          role: string | null
+          sector: string | null
+          tags: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          activated_at?: string | null
+          bio?: string | null
+          can_offer?: string[] | null
+          city?: string | null
+          club_id?: string | null
+          company?: string | null
+          created_at?: string
+          email: string
+          first_name: string
+          id: string
+          invited_at?: string | null
+          last_name: string
+          looking_for?: string[] | null
+          phone?: string | null
+          role?: string | null
+          sector?: string | null
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          activated_at?: string | null
+          bio?: string | null
+          can_offer?: string[] | null
+          city?: string | null
+          club_id?: string | null
+          company?: string | null
+          created_at?: string
+          email?: string
+          first_name?: string
+          id?: string
+          invited_at?: string | null
+          last_name?: string
+          looking_for?: string[] | null
+          phone?: string | null
+          role?: string | null
+          sector?: string | null
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "members_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          club_id: string | null
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          club_id?: string | null
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          club_id?: string | null
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      managed_club_id: { Args: { _user_id: string }; Returns: string }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "superadmin" | "gestionnaire" | "membre"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +289,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["superadmin", "gestionnaire", "membre"],
+    },
   },
 } as const
