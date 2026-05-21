@@ -122,7 +122,7 @@ function ClubPage() {
         </CardHeader>
       </Card>
 
-      <AddMemberForm clubName={club.name} />
+      <AddMemberForm clubId={club.id} clubName={club.name} />
 
       <ClubPotsSection clubId={club.id} />
 
