@@ -66,16 +66,22 @@ function defaultState(): State {
   };
 }
 
-let state: State =
-  typeof window !== "undefined"
-    ? (() => {
-        try {
-          const raw = localStorage.getItem(STORAGE_KEY);
-          if (raw) return { ...defaultState(), ...JSON.parse(raw) } as State;
-        } catch {}
-        return defaultState();
-      })()
-    : defaultState();
+// Always start from defaultState on both server and client so initial render
+// matches SSR. Hydration from localStorage happens in an effect after mount.
+let state: State = defaultState();
+let hydrated = false;
+
+function hydrateFromStorage() {
+  if (hydrated || typeof window === "undefined") return;
+  hydrated = true;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      state = { ...defaultState(), ...JSON.parse(raw) } as State;
+      listeners.forEach((l) => l());
+    }
+  } catch {}
+}
 
 const listeners = new Set<() => void>();
 const emit = () => {
@@ -87,15 +93,18 @@ const emit = () => {
   listeners.forEach((l) => l());
 };
 const subscribe = (l: () => void) => {
+  hydrateFromStorage();
   listeners.add(l);
   return () => listeners.delete(l);
 };
+
+const serverSnapshot = state;
 
 export function useAuth() {
   return useSyncExternalStore(
     subscribe,
     () => state,
-    () => state,
+    () => serverSnapshot,
   );
 }
 
