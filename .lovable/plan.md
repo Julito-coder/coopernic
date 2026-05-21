@@ -1,60 +1,64 @@
-# Auth réelle + invitation email + restriction des rôles
+## Objectif
 
-Aujourd'hui toute l'app tourne en **mock localStorage** (auth-store, membres, clubs). Pour qu'un membre reçoive vraiment un email et puisse se connecter, il faut migrer vers Lovable Cloud (DB + Auth + Emails). C'est gros, donc je propose de faire ça en **3 batchs** pour rester lisible.
+Permettre à un gestionnaire de club de créer une **cagnotte** (autonome ou liée à un évènement) pour financer une dépense collective. Les membres du club paient leur quote-part en ligne via Stripe, **une seule fois par membre**, avec **division dynamique** : tant que la cagnotte est ouverte, la part = `objectif ÷ nombre de membres ayant cliqué "je participe"` (recalculée à chaque nouvel inscrit, jusqu'à clôture).
 
-## Batch 1 — Fondations auth & DB
+## Outil retenu
 
-**Base de données** (migration SQL) :
-- `clubs` : id, name, city, gestionnaire_id, open_to_network, created_at
-- `members` : id (= auth user id), club_id, first_name, last_name, role métier, company, sector, city, email, phone, etc.
-- `user_roles` : (user_id, role enum `superadmin | gestionnaire | membre`) — table séparée pour la sécurité (jamais sur profiles)
-- Fonction `has_role(user_id, role)` en SECURITY DEFINER pour les policies RLS
-- RLS sur toutes les tables :
-  - Super admin : tout
-  - Gestionnaire : son club uniquement (lecture + écriture sur ses membres)
-  - Membre : son propre profil + annuaire selon règle inter-clubs
+**Stripe intégré Lovable** (`enable_stripe_payments`). Avantages :
+- Aucun compte Stripe à créer côté gestionnaire, KYC géré par Lovable.
+- Liens de paiement (Stripe Checkout) générables par cagnotte.
+- Webhooks signés → on suit en temps réel les paiements dans l'app.
+- Frais ~1,5% + 0,25 € (CB UE). Pas de tax handling nécessaire (cagnotte = collecte interne au club, pas une vente).
 
-**Auth** :
-- Page `/login` (email + mot de passe + Google)
-- Page `/auth/set-password` (lien de définition de mot de passe à la première connexion)
-- Route protégée via layout `_authenticated`
-- Redirection si pas connecté
+Alternatives écartées : Leetchi/HelloAsso (lien externe, pas de contrôle "1 paiement/membre" ni split auto dans l'app) ; Lydia (pas d'API marchand grand public).
 
-## Batch 2 — Invitation email + flow gestionnaire
+## Parcours utilisateur
 
-- Server function `inviteMember` (admin client) :
-  1. Crée le user dans Supabase Auth (avec `email_confirm: false`)
-  2. Génère un lien de définition de mot de passe
-  3. Envoie un email d'invitation via **Lovable Emails** (template branded Coopernic, nom du club, lien)
-  4. Crée la ligne `members` + assigne le rôle `membre` dans `user_roles`
-- Setup du domaine email + scaffold transactional emails
-- Template `member-invitation.tsx` (React Email) avec branding Coopernic
-- Formulaire "Ajouter un membre" dans `/club` appelle cette server fn
-- Toast de confirmation + état "invitation envoyée"
-- Bouton "Renvoyer l'invitation" si pas encore activé
+**Gestionnaire (`/club`, nouvel onglet "Cagnottes")**
+1. Crée une cagnotte : titre, description, objectif (€), date de clôture, évènement lié (optionnel — liste les events du club), visibilité (tous les membres / membres inscrits à l'event).
+2. Voit la liste de ses cagnottes avec progression (€ collecté / objectif, nb participants, part actuelle, statut).
+3. Peut clôturer, relancer les non-payeurs (email), exporter la liste.
 
-## Batch 3 — Permissions UI & vues différenciées
+**Membre (`/club` → cagnottes visibles, + bandeau sur la fiche event)**
+1. Voit les cagnottes ouvertes de son club avec part suggérée temps réel.
+2. Clique "Je participe" → s'ajoute aux inscrits (recalcule la part pour tous).
+3. Clique "Payer ma part" → Stripe Checkout avec le montant exact, retour vers `/club/cagnottes/:id` avec confirmation.
+4. Un membre ne peut payer **qu'une fois** par cagnotte (contrôle DB + check côté serveur avant création du Checkout).
 
-- **Super admin (vous)** : conserve `/admin` (vue globale clubs), accès à n'importe quel club
-- **Gestionnaire** : 
-  - Pas d'accès à `/admin`
-  - Header simplifié, badge "Gestionnaire de [Club X]"
-  - `/club` automatiquement scope sur son club (pas de sélecteur)
-  - Peut ajouter / révoquer / nommer un nouveau gestionnaire dans son club
-  - Voit l'annuaire inter-clubs comme un membre (règle de réciprocité existante)
-- **Membre** : pas d'accès `/club` ni `/admin`, juste annuaire/messagerie/recos/profil
-- Switch de session mock (boutons "se connecter en tant que…") **supprimé**
+## Plan d'exécution (4 batchs)
 
-## Notes techniques (pour info)
+**Batch 1 — Activation Stripe + schéma DB**
+- `enable_stripe_payments` (tax option 3 : pas d'automatisation, c'est une collecte interne).
+- Migration : tables `pots` (id, club_id, event_id?, title, description, goal_cents, deadline, status: open/closed/cancelled, created_by), `pot_participants` (pot_id, member_id, joined_at — pour la division dynamique), `pot_payments` (id, pot_id, member_id UNIQUE(pot_id,member_id), amount_cents, stripe_session_id, stripe_payment_intent, status: pending/paid/refunded, paid_at).
+- RLS : gestionnaire CRUD sur cagnottes de son club ; membres voient/participent/paient les cagnottes de leur club ; superadmin tout.
 
-- Auth via `lovable.auth.signInWithOAuth("google", ...)` + email/password Supabase
-- Server functions avec `requireSupabaseAuth` pour les opérations user
-- `supabaseAdmin` (service role) uniquement pour la création de comptes côté invitation
-- Le mock `auth-store.ts` sera remplacé par un hook `useSession` basé sur Supabase
-- `mock-data.ts` sera conservé temporairement comme seed (script de bootstrap pour la démo)
+**Batch 2 — UI gestionnaire**
+- Onglet "Cagnottes" dans `/club` (gestionnaire uniquement) : liste + bouton "Créer une cagnotte" + modale de création (avec sélecteur d'évènement optionnel).
+- Page détail cagnotte : KPIs (collecté, part courante, participants, payeurs), tableau membres avec statut (inscrit / payé / en attente), actions clôturer + relancer.
 
-## Question avant de démarrer
+**Batch 3 — UI membre + checkout Stripe**
+- Section "Cagnottes du club" visible par les membres + encart sur la fiche évènement quand une cagnotte est liée.
+- Bouton "Je participe" → server fn `joinPot` (insère dans `pot_participants`, recalcule part affichée).
+- Bouton "Payer ma part X €" → server fn `createPotCheckout` : vérifie membre inscrit + non-payeur, calcule la part courante, crée la Stripe Checkout Session, retourne l'URL.
+- Page de retour avec confirmation + invalidation du cache.
 
-Je propose de commencer par le **Batch 1** (fondations) — sans toucher à l'UI existante autre que l'ajout du `/login`. Ça posera la base proprement.
+**Batch 4 — Webhook Stripe + finalisation**
+- Server route `/api/public/stripe-webhook` (signature vérifiée) : sur `checkout.session.completed`, marque `pot_payments.status = paid`, enregistre `paid_at`.
+- Logique de clôture : à la `deadline` ou via clic gestionnaire → `status = closed`, plus de nouveaux paiements, part finale figée.
+- Email transactionnel au membre : confirmation paiement + reçu Stripe. Email au gestionnaire à chaque paiement.
 
-→ **Confirme-tu qu'on y va comme ça**, ou tu préfères qu'on attaque directement le Batch 2 (email d'invitation) en gardant le mock auth pour l'instant ?
+## Détails techniques
+
+- **Division dynamique** : la "part courante" est calculée à la volée (`goal_cents / count(participants)`), pas stockée. Au moment du paiement, on fige le montant dans la Checkout Session (sinon un retard d'inscription après création de session ferait diverger montant payé vs part affichée — accepté côté produit, le surplus reste à la cagnotte).
+- **1 paiement/membre** : contrainte UNIQUE(pot_id, member_id) sur `pot_payments` + check serveur avant Checkout.
+- **Liaison event** : `pots.event_id` nullable → cagnotte peut exister seule (cadeau, charity) ou liée à un event. Quand liée, la liste "participants" peut être pré-remplie depuis les inscrits event (option à la création).
+- **Sécurité** : tous les montants calculés côté serveur (server fn), jamais depuis le client. Webhook vérifie signature Stripe avant écriture.
+
+## Hors-scope V1 (à confirmer plus tard)
+
+- Remboursements partiels / annulation de cagnotte avec remboursement auto.
+- Cagnottes inter-clubs.
+- Paiement Apple Pay / Google Pay (Stripe Checkout les gère automatiquement, donc en pratique inclus).
+- Reversement automatique des fonds vers un IBAN du club (V1 : les fonds restent sur le compte Stripe Lovable, virement manuel sur demande — à valider avec toi selon la structure juridique des clubs).
+
+⚠️ **Point juridique à clarifier avant Batch 1** : selon la structure des clubs (association loi 1901 vs entreprise vs informel), la collecte de fonds via Stripe Lovable peut nécessiter un statut spécifique. Je recommande de valider avec un comptable, ou alors basculer en V1 sur des **liens Leetchi/HelloAsso externes** (où chaque club gère sa propre cagnotte légalement) et garder Stripe pour la V2.
