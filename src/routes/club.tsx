@@ -120,6 +120,9 @@ function ClubPage() {
 
       <AddMemberForm clubName={club.name} />
 
+      <ClubPotsSection clubId={club.id} />
+
+
       <section className="space-y-3">
         <h2 className="font-display text-xl font-semibold">Membres du club</h2>
         <div className="overflow-hidden rounded-xl border border-border/60 bg-card">
