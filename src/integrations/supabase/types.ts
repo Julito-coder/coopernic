@@ -115,6 +115,132 @@ export type Database = {
           },
         ]
       }
+      pot_participants: {
+        Row: {
+          id: string
+          joined_at: string
+          member_id: string
+          pot_id: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string
+          member_id: string
+          pot_id: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string
+          member_id?: string
+          pot_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pot_participants_pot_id_fkey"
+            columns: ["pot_id"]
+            isOneToOne: false
+            referencedRelation: "pots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pot_payments: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          id: string
+          member_id: string
+          paid_at: string | null
+          pot_id: string
+          status: string
+          stripe_payment_intent: string | null
+          stripe_session_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          id?: string
+          member_id: string
+          paid_at?: string | null
+          pot_id: string
+          status?: string
+          stripe_payment_intent?: string | null
+          stripe_session_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          id?: string
+          member_id?: string
+          paid_at?: string | null
+          pot_id?: string
+          status?: string
+          stripe_payment_intent?: string | null
+          stripe_session_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pot_payments_pot_id_fkey"
+            columns: ["pot_id"]
+            isOneToOne: false
+            referencedRelation: "pots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pots: {
+        Row: {
+          club_id: string
+          created_at: string
+          created_by: string
+          deadline: string | null
+          description: string | null
+          event_id: string | null
+          goal_cents: number
+          id: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          created_by: string
+          deadline?: string | null
+          description?: string | null
+          event_id?: string | null
+          goal_cents: number
+          id?: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          created_by?: string
+          deadline?: string | null
+          description?: string | null
+          event_id?: string | null
+          goal_cents?: number
+          id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pots_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           club_id: string | null

@@ -28,6 +28,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Trash2, UserPlus, Crown, ShieldCheck, Globe2 } from "lucide-react";
+import { ClubPotsSection } from "@/components/ClubPotsSection";
 
 type Search = { id?: string };
 
@@ -118,6 +119,9 @@ function ClubPage() {
       </Card>
 
       <AddMemberForm clubName={club.name} />
+
+      <ClubPotsSection clubId={club.id} />
+
 
       <section className="space-y-3">
         <h2 className="font-display text-xl font-semibold">Membres du club</h2>
