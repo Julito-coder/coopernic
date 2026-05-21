@@ -3,8 +3,11 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const InviteSchema = z.object({
   clubId: z.string().min(1).max(64),
+  clubName: z.string().min(1).max(160).optional(),
   email: z.string().email().max(255),
   firstName: z.string().min(1).max(100),
   lastName: z.string().min(1).max(100),
@@ -22,15 +25,47 @@ export const inviteMember = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
-    // Authorize: must be superadmin OR gestionnaire of the target club
     const { data: roles } = await supabase
       .from("user_roles")
       .select("role, club_id")
       .eq("user_id", userId);
 
     const isSuper = roles?.some((r) => r.role === "superadmin");
+    let targetClubId = data.clubId;
+
+    if (!UUID_RE.test(targetClubId)) {
+      if (!data.clubName) {
+        throw new Error("Club invalide : nom du club manquant.");
+      }
+
+      const { data: existingClub, error: clubErr } = await supabaseAdmin
+        .from("clubs")
+        .select("id")
+        .eq("name", data.clubName)
+        .maybeSingle();
+      if (clubErr) throw new Error(clubErr.message);
+
+      if (existingClub?.id) {
+        targetClubId = existingClub.id;
+      } else {
+        if (!isSuper) {
+          throw new Error("Ce club doit d'abord être créé par le super admin.");
+        }
+        const { data: createdClub, error: createClubErr } = await supabaseAdmin
+          .from("clubs")
+          .insert({ name: data.clubName, city: data.city || "Non renseignée" })
+          .select("id")
+          .single();
+        if (createClubErr || !createdClub) {
+          throw new Error(createClubErr?.message ?? "Création du club impossible");
+        }
+        targetClubId = createdClub.id;
+      }
+    }
+
+    // Authorize: must be superadmin OR gestionnaire of the target club
     const isManagerOfClub = roles?.some(
-      (r) => r.role === "gestionnaire" && r.club_id === data.clubId,
+      (r) => r.role === "gestionnaire" && r.club_id === targetClubId,
     );
     if (!isSuper && !isManagerOfClub) {
       throw new Error("Not authorized to invite members for this club");
@@ -43,7 +78,7 @@ export const inviteMember = createServerFn({ method: "POST" })
         data: {
           first_name: data.firstName,
           last_name: data.lastName,
-          club_id: data.clubId,
+          club_id: targetClubId,
         },
       });
 
@@ -70,7 +105,7 @@ export const inviteMember = createServerFn({ method: "POST" })
       await supabaseAdmin.from("members").upsert(
         {
           id: existing.id,
-          club_id: data.clubId,
+          club_id: targetClubId,
           email: data.email,
           first_name: data.firstName,
           last_name: data.lastName,
@@ -84,6 +119,11 @@ export const inviteMember = createServerFn({ method: "POST" })
         { onConflict: "id" },
       );
 
+      await supabaseAdmin.from("user_roles").upsert(
+        { user_id: existing.id, role: "membre", club_id: targetClubId },
+        { onConflict: "user_id,role,club_id" },
+      );
+
       return { ok: true, memberId: existing.id, reinvited: true };
     }
 
@@ -92,7 +132,7 @@ export const inviteMember = createServerFn({ method: "POST" })
     const { error: insertErr } = await supabaseAdmin.from("members").upsert(
       {
         id: newUserId,
-        club_id: data.clubId,
+        club_id: targetClubId,
         email: data.email,
         first_name: data.firstName,
         last_name: data.lastName,
@@ -107,6 +147,13 @@ export const inviteMember = createServerFn({ method: "POST" })
     );
 
     if (insertErr) throw new Error(insertErr.message);
+
+    const { error: roleErr } = await supabaseAdmin.from("user_roles").upsert(
+      { user_id: newUserId, role: "membre", club_id: targetClubId },
+      { onConflict: "user_id,role,club_id" },
+    );
+
+    if (roleErr) throw new Error(roleErr.message);
 
     return { ok: true, memberId: newUserId, reinvited: false };
   });
