@@ -238,6 +238,7 @@ function AddMemberForm({ clubId, clubName }: { clubId: string; clubName: string 
               const res = await invite({
                 data: {
                   clubId,
+                  clubName,
                   email: form.email.trim(),
                   firstName: form.firstName.trim(),
                   lastName: form.lastName.trim(),
