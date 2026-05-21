@@ -28,6 +28,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Trash2, UserPlus, Crown, ShieldCheck, Globe2 } from "lucide-react";
+import { ClubPotsSection } from "@/components/ClubPotsSection";
 
 type Search = { id?: string };
 
