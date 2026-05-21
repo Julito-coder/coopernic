@@ -273,13 +273,14 @@ export const createPotCheckout = createServerFn({ method: "POST" })
         },
       ],
       payment_intent_data: { description },
-      managed_payments: { enabled: true },
       metadata: {
         userId,
         pot_id: pot.id,
         club_id: pot.club_id,
       },
-    });
+      // Full Stripe compliance handling (+3.5%) — not yet typed in SDK 22
+      managed_payments: { enabled: true },
+    } as any);
 
     // Upsert pending pot_payment with session id
     await supabase.from("pot_payments").upsert(
