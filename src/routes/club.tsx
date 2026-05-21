@@ -1,5 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
+import { inviteMember } from "@/lib/members.functions";
 import {
   useAuth,
   getClub,
@@ -9,6 +12,7 @@ import {
   setGestionnaire,
   setClubOpenToNetwork,
 } from "@/lib/auth-store";
+
 import { SECTORS, CITIES } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -118,7 +122,7 @@ function ClubPage() {
         </CardHeader>
       </Card>
 
-      <AddMemberForm clubName={club.name} />
+      <AddMemberForm clubId={club.id} clubName={club.name} />
 
       <ClubPotsSection clubId={club.id} />
 
@@ -197,7 +201,7 @@ function ClubPage() {
   );
 }
 
-function AddMemberForm({ clubName }: { clubName: string }) {
+function AddMemberForm({ clubId, clubName }: { clubId: string; clubName: string }) {
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -208,33 +212,67 @@ function AddMemberForm({ clubName }: { clubName: string }) {
     email: "",
     phone: "",
   });
+  const [loading, setLoading] = useState(false);
   const set = (k: keyof typeof form) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
+  const invite = useServerFn(inviteMember);
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="font-display">Ajouter un membre</CardTitle>
-        <CardDescription>Invitation manuelle au club.</CardDescription>
+        <CardDescription>
+          Un email d'invitation sera envoyé pour créer le compte.
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <form
           className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
-          onSubmit={(e) => {
+          onSubmit={async (e) => {
             e.preventDefault();
-            if (!form.firstName.trim() || !form.lastName.trim()) return;
-            addMember({ ...form, clubName });
-            setForm({
-              firstName: "",
-              lastName: "",
-              role: "",
-              company: "",
-              sector: SECTORS[0],
-              city: CITIES[0],
-              email: "",
-              phone: "",
-            });
+            if (!form.firstName.trim() || !form.lastName.trim() || !form.email.trim()) {
+              toast.error("Prénom, nom et email sont requis.");
+              return;
+            }
+            setLoading(true);
+            try {
+              const res = await invite({
+                data: {
+                  clubId,
+                  email: form.email.trim(),
+                  firstName: form.firstName.trim(),
+                  lastName: form.lastName.trim(),
+                  role: form.role,
+                  company: form.company,
+                  sector: form.sector,
+                  city: form.city,
+                  phone: form.phone,
+                  redirectTo: `${window.location.origin}/auth/set-password`,
+                },
+              });
+              addMember({ ...form, clubName });
+              toast.success(
+                res.reinvited
+                  ? "Compte existant — email de réinitialisation envoyé."
+                  : "Invitation envoyée par email.",
+              );
+              setForm({
+                firstName: "",
+                lastName: "",
+                role: "",
+                company: "",
+                sector: SECTORS[0],
+                city: CITIES[0],
+                email: "",
+                phone: "",
+              });
+            } catch (err) {
+              toast.error(err instanceof Error ? err.message : "Échec de l'invitation");
+            } finally {
+              setLoading(false);
+            }
           }}
         >
+
           <Input placeholder="Prénom" value={form.firstName} onChange={(e) => set("firstName")(e.target.value)} />
           <Input placeholder="Nom" value={form.lastName} onChange={(e) => set("lastName")(e.target.value)} />
           <Input placeholder="Fonction" value={form.role} onChange={(e) => set("role")(e.target.value)} />
@@ -254,10 +292,11 @@ function AddMemberForm({ clubName }: { clubName: string }) {
           <Input placeholder="Email" type="email" value={form.email} onChange={(e) => set("email")(e.target.value)} />
           <Input placeholder="Téléphone" value={form.phone} onChange={(e) => set("phone")(e.target.value)} />
           <div className="sm:col-span-2 lg:col-span-4">
-            <Button type="submit" className="gap-2">
-              <UserPlus className="h-4 w-4" /> Ajouter au club
+            <Button type="submit" className="gap-2" disabled={loading}>
+              <UserPlus className="h-4 w-4" /> {loading ? "Envoi…" : "Inviter au club"}
             </Button>
           </div>
+
         </form>
       </CardContent>
     </Card>
