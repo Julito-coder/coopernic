@@ -21,6 +21,7 @@ const baseNav = [
   { to: "/annuaire", label: "Annuaire", roles: ["superadmin", "gestionnaire", "membre"] as Role[] },
   { to: "/messages", label: "Messages", roles: ["superadmin", "gestionnaire", "membre"] as Role[] },
   { to: "/recos", label: "Stats", roles: ["superadmin", "gestionnaire", "membre"] as Role[] },
+  { to: "/cagnottes", label: "Cagnottes", roles: ["superadmin", "gestionnaire", "membre"] as Role[] },
   { to: "/club", label: "Mon club", roles: ["superadmin", "gestionnaire"] as Role[] },
   { to: "/admin", label: "Super Admin", roles: ["superadmin"] as Role[] },
 ] as const;
