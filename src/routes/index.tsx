@@ -9,6 +9,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import appIcon from "@/assets/coopernic-app-icon.jpg";
+import appMockup from "@/assets/coopernic-app-mockup.png";
 
 export const Route = createFileRoute("/")({
   component: Landing,
@@ -68,6 +69,18 @@ function Landing() {
           <p className="mt-6 text-xs text-muted-foreground">
             Essai 30 jours · Sans carte · Migration depuis Excel offerte
           </p>
+
+          {/* APP MOCKUP */}
+          <div className="relative mx-auto mt-16 w-full max-w-sm md:max-w-md">
+            <div className="absolute -inset-10 -z-10 rounded-full bg-accent/20 blur-3xl" />
+            <img
+              src={appMockup}
+              alt="Aperçu de l'application Coopernic sur mobile"
+              width={1024}
+              height={1536}
+              className="mx-auto w-full drop-shadow-2xl"
+            />
+          </div>
         </div>
       </section>
 
