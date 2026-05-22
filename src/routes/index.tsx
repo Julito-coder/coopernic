@@ -37,7 +37,7 @@ function Landing() {
           </div>
 
           <h1 className="mt-8 font-display text-5xl font-extrabold leading-[1.05] tracking-tight text-balance md:text-7xl">
-            La gestion de votre club,
+            Votre club,
             <br />
             <span className="text-accent">dans la poche.</span>
           </h1>
