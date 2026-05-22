@@ -37,14 +37,15 @@ function Landing() {
           </div>
 
           <h1 className="mt-8 font-display text-5xl font-extrabold leading-[1.05] tracking-tight text-balance md:text-7xl">
-            Dirigez votre club.
+            La gestion de votre club,
             <br />
-            <span className="text-accent">Pas votre Excel.</span>
+            <span className="text-accent">dans la poche.</span>
           </h1>
 
           <p className="mx-auto mt-7 max-w-2xl text-lg leading-relaxed text-ink-muted md:text-xl">
-            Coopernic réunit annuaire, événements, cotisations et suivi business
-            dans une seule application — pour que vous passiez vos soirées à animer
+            Démarquez-vous : offrez à vos membres un outil clé en main.
+            Recommandations, paiements, annuaire, événements — réunis dans une seule app,
+            pour que vous passiez vos soirées à animer
             votre cercle, pas à relancer des impayés.
           </p>
 
