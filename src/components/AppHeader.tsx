@@ -67,7 +67,7 @@ export function AppHeader() {
   const primaryItems = items.filter((i) => i.primary).slice(0, 5);
   const overflowItems = items.filter((i) => !i.primary);
   const RoleIcon = ROLE_META[effectiveRole].icon;
-  const members = allMembers();
+  
 
   return (
     <>
@@ -111,9 +111,9 @@ export function AppHeader() {
             effectiveRole={effectiveRole}
             effectiveDisplayName={effectiveDisplayName}
             RoleIcon={RoleIcon}
-            members={members}
             realUserEmail={real.user?.email ?? null}
           />
+
         </div>
       </header>
 
