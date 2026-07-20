@@ -36,25 +36,9 @@ const slug = (s: string) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
 
-function bootstrapClubs(): Club[] {
-  const names = Array.from(new Set(MEMBERS.map((m) => m.club)));
-  return names.map((name, i) => {
-    const sample = MEMBERS.find((m) => m.club === name)!;
-    return {
-      id: slug(name),
-      name,
-      city: sample.city,
-      gestionnaireId: sample.id,
-      openToNetwork: i % 2 === 0, // 1 club sur 2 ouvert au réseau pour la démo
-      createdAt: new Date().toISOString(),
-    };
-  });
-}
-
 function defaultState(): State {
-  const clubs = bootstrapClubs();
   return {
-    clubs,
+    clubs: [],
     extraMembers: [],
     removedMemberIds: [],
     session: {
@@ -65,6 +49,7 @@ function defaultState(): State {
     },
   };
 }
+
 
 // Always start from defaultState on both server and client so initial render
 // matches SSR. Hydration from localStorage happens in an effect after mount.
