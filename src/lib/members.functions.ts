@@ -4,6 +4,12 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+// URL canonique où l'utilisateur définit son mot de passe après invitation.
+// Toujours utiliser le domaine de production, quel que soit l'origine de l'admin
+// (preview Lovable, coopernic.lovable.app, etc.), pour que le lien de l'email
+// arrive bien sur la page de définition du mot de passe.
+const INVITE_REDIRECT_URL = "https://coopernic.fr/auth/set-password";
+
 const InviteSchema = z.object({
   clubId: z.string().min(1).max(64),
   clubName: z.string().min(1).max(160).optional(),
@@ -15,7 +21,7 @@ const InviteSchema = z.object({
   sector: z.string().max(120).optional().default(""),
   city: z.string().max(120).optional().default(""),
   phone: z.string().max(40).optional().default(""),
-  redirectTo: z.string().url(),
+  redirectTo: z.string().url().optional(),
 });
 
 async function assertSuperadmin(supabase: any, userId: string) {
