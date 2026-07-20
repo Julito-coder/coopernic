@@ -1,7 +1,7 @@
 // Lightweight in-memory + localStorage reco store with pub/sub.
 // Will be swapped for Lovable Cloud (DB) in Phase 4.
 
-import { MEMBERS } from "./mock-data";
+
 
 export type RecoStatus = "envoyee" | "contacte" | "rdv" | "deal" | "no_deal";
 
@@ -199,13 +199,11 @@ export function computeStats(userId: string = CURRENT_USER_ID) {
     }
     byMember.set(r.fromMemberId, cur);
   }
-  const leaderboard = MEMBERS
-    .map((m) => ({
-      member: m,
-      ...(byMember.get(m.id) ?? { sent: 0, won: 0, ca: 0 }),
-    }))
+  const leaderboard = Array.from(byMember.entries())
+    .map(([memberId, s]) => ({ memberId, ...s }))
     .sort((a, b) => b.ca - a.ca || b.won - a.won || b.sent - a.sent)
     .slice(0, 5);
+
 
   return {
     sentCount: sent.length,
