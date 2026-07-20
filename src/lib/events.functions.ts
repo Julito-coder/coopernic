@@ -7,13 +7,13 @@ export const getMyEventsContext = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
-    // managed club (gestionnaire)
     const { data: role } = await supabase
       .from("user_roles")
       .select("club_id, role")
       .eq("user_id", userId)
       .maybeSingle();
-    const isManager = role?.role === "gestionnaire" || role?.role === "superadmin";
+    const isSuperadmin = role?.role === "superadmin";
+    const isManager = role?.role === "gestionnaire" || isSuperadmin;
     let clubId: string | null = role?.club_id ?? null;
     if (!clubId) {
       const { data: m } = await supabase
@@ -23,7 +23,13 @@ export const getMyEventsContext = createServerFn({ method: "GET" })
         .maybeSingle();
       clubId = m?.club_id ?? null;
     }
-    return { clubId, isManager };
+    let clubs: Array<{ id: string; name: string }> = [];
+    if (isSuperadmin) {
+      const { data: c } = await supabase.from("clubs").select("id, name").order("name");
+      clubs = c ?? [];
+      if (!clubId && clubs.length) clubId = clubs[0].id;
+    }
+    return { clubId, isManager, isSuperadmin, clubs };
   });
 
 export const listEvents = createServerFn({ method: "GET" })
