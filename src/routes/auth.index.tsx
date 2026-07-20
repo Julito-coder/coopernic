@@ -1,7 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,12 +8,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 import logoMark from "@/assets/coopernic-mark.png";
 
-export const Route = createFileRoute("/login")({
-  head: () => ({ meta: [{ title: "Connexion — Coopernic" }] }),
-  component: LoginPage,
+export const Route = createFileRoute("/auth/")({
+  head: () => ({
+    meta: [
+      { title: "Connexion — Coopernic" },
+      { name: "description", content: "Portail d'accès à ton espace Coopernic. Les identifiants sont fournis par ton club." },
+    ],
+  }),
+  component: AuthPage,
 });
 
-function LoginPage() {
+function AuthPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -33,22 +37,6 @@ function LoginPage() {
     }
     toast.success("Connecté");
     navigate({ to: "/" });
-  }
-
-  async function handleGoogle() {
-    setLoading(true);
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
-    if (result.error) {
-      setLoading(false);
-      toast.error("Échec de la connexion Google");
-      return;
-    }
-    if (!result.redirected) {
-      setLoading(false);
-      navigate({ to: "/" });
-    }
   }
 
   async function handleReset(e: FormEvent) {
@@ -82,7 +70,7 @@ function LoginPage() {
           </CardTitle>
           <CardDescription>
             {mode === "login"
-              ? "Accède à ton espace Coopernic."
+              ? "Accède à ton espace Coopernic avec les identifiants reçus par email."
               : "On t'envoie un lien pour redéfinir ton mot de passe."}
           </CardDescription>
         </CardHeader>
@@ -91,21 +79,14 @@ function LoginPage() {
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                <Input id="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="password">Mot de passe</Label>
-                <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+                <Input id="password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? "…" : "Se connecter"}
-              </Button>
-              <div className="relative py-1">
-                <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border/60" /></div>
-                <div className="relative flex justify-center text-xs uppercase tracking-wider"><span className="bg-card px-2 text-muted-foreground">ou</span></div>
-              </div>
-              <Button type="button" variant="outline" className="w-full" onClick={handleGoogle} disabled={loading}>
-                Continuer avec Google
               </Button>
               <button
                 type="button"
@@ -114,12 +95,15 @@ function LoginPage() {
               >
                 Mot de passe oublié ?
               </button>
+              <p className="pt-2 text-center text-[11px] leading-relaxed text-muted-foreground">
+                Pas encore de compte&nbsp;? Les accès Coopernic sont créés par le gestionnaire de ton club. Contacte-le pour recevoir ton invitation par email.
+              </p>
             </form>
           ) : (
             <form onSubmit={handleReset} className="space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="reset-email">Email</Label>
-                <Input id="reset-email" type="email" required value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} />
+                <Input id="reset-email" type="email" autoComplete="email" required value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} />
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? "…" : "Envoyer le lien"}

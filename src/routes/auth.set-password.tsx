@@ -88,7 +88,7 @@ function SetPasswordPage() {
               </Button>
             </form>
           ) : (
-            <Button className="w-full" onClick={() => navigate({ to: "/login" })}>
+            <Button className="w-full" onClick={() => navigate({ to: "/auth" })}>
               Aller à la connexion
             </Button>
           )}
