@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import logoMark from "@/assets/coopernic-mark.png";
 import { useAuth, type Role } from "@/lib/auth-store";
 import { useSession, signOut } from "@/lib/use-session";
@@ -181,6 +182,16 @@ function ProfileMenu({
   RoleIcon: typeof User;
   realUserEmail: string | null;
 }) {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  async function handleSignOut() {
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    await signOut();
+    navigate({ to: "/auth", replace: true });
+  }
+
   if (!realUserEmail) {
     return (
       <Link
@@ -209,7 +220,7 @@ function ProfileMenu({
       <DropdownMenuContent align="end" className="w-64">
         <DropdownMenuLabel className="truncate">{realUserEmail}</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => signOut()}>
+        <DropdownMenuItem onClick={handleSignOut}>
           <LogOut className="mr-2 h-4 w-4" /> Se déconnecter
         </DropdownMenuItem>
       </DropdownMenuContent>
