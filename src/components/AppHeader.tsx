@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import logoMark from "@/assets/coopernic-mark.png";
 import { useAuth, type Role } from "@/lib/auth-store";
 import { useSession, signOut } from "@/lib/use-session";
