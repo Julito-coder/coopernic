@@ -118,7 +118,7 @@ export const inviteMember = createServerFn({ method: "POST" })
       );
       if (!existing) throw new Error(msg);
 
-      await supabaseAdmin.auth.resetPasswordForEmail(data.email, { redirectTo: data.redirectTo });
+      await supabaseAdmin.auth.resetPasswordForEmail(data.email, { redirectTo: INVITE_REDIRECT_URL });
 
       await supabaseAdmin.from("members").upsert(
         {
