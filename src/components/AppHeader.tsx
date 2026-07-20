@@ -176,7 +176,6 @@ function ProfileMenu({
   effectiveRole,
   effectiveDisplayName,
   RoleIcon,
-  members,
   realUserEmail,
 }: {
   effectiveRole: Role;
@@ -185,6 +184,17 @@ function ProfileMenu({
   members: ReturnType<typeof allMembers>;
   realUserEmail: string | null;
 }) {
+  if (!realUserEmail) {
+    return (
+      <Link
+        to="/auth"
+        className="inline-flex h-9 items-center gap-2 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5"
+      >
+        <LogIn className="h-4 w-4" />
+        Connexion
+      </Link>
+    );
+  }
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className="flex items-center gap-2 rounded-full border border-border bg-card py-1 pl-1 pr-2 text-left transition-colors hover:bg-secondary md:py-1.5 md:pl-2 md:pr-3">
@@ -199,46 +209,14 @@ function ProfileMenu({
         </div>
         <ChevronDown className="hidden h-4 w-4 text-muted-foreground md:block" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-60">
-        <DropdownMenuLabel>Changer de rôle (démo)</DropdownMenuLabel>
-        <DropdownMenuItem onClick={() => loginAs("superadmin")}>
-          <ShieldCheck className="mr-2 h-4 w-4 text-accent" /> Super Admin
-        </DropdownMenuItem>
-        <DropdownMenuSub>
-          <DropdownMenuSubTrigger>
-            <Crown className="mr-2 h-4 w-4 text-accent" /> Gestionnaire (en tant que…)
-          </DropdownMenuSubTrigger>
-          <DropdownMenuSubContent className="max-h-72 overflow-y-auto">
-            {members.map((m) => (
-              <DropdownMenuItem key={m.id} onClick={() => loginAs("gestionnaire", m.id)}>
-                {m.firstName} {m.lastName} <span className="ml-1 text-xs text-muted-foreground">· {m.club}</span>
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuSubContent>
-        </DropdownMenuSub>
-        <DropdownMenuSub>
-          <DropdownMenuSubTrigger>
-            <User className="mr-2 h-4 w-4" /> Membre (en tant que…)
-          </DropdownMenuSubTrigger>
-          <DropdownMenuSubContent className="max-h-72 overflow-y-auto">
-            {members.map((m) => (
-              <DropdownMenuItem key={m.id} onClick={() => loginAs("membre", m.id)}>
-                {m.firstName} {m.lastName} <span className="ml-1 text-xs text-muted-foreground">· {m.club}</span>
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuSubContent>
-        </DropdownMenuSub>
+      <DropdownMenuContent align="end" className="w-64">
+        <DropdownMenuLabel className="truncate">{realUserEmail}</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {realUserEmail ? (
-          <DropdownMenuItem onClick={() => signOut()}>
-            <LogOut className="mr-2 h-4 w-4" /> Se déconnecter ({realUserEmail})
-          </DropdownMenuItem>
-        ) : (
-          <DropdownMenuItem asChild>
-            <Link to="/auth"><LogIn className="mr-2 h-4 w-4" /> Connexion réelle</Link>
-          </DropdownMenuItem>
-        )}
+        <DropdownMenuItem onClick={() => signOut()}>
+          <LogOut className="mr-2 h-4 w-4" /> Se déconnecter
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
 }
+
