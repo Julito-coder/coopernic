@@ -179,7 +179,6 @@ function ProfileMenu({
   effectiveRole: Role;
   effectiveDisplayName: string;
   RoleIcon: typeof User;
-  members: ReturnType<typeof allMembers>;
   realUserEmail: string | null;
 }) {
   if (!realUserEmail) {
