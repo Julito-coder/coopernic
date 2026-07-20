@@ -94,6 +94,21 @@ function EventsPage() {
           )}
         </div>
 
+        {isSuperadmin && clubs.length > 0 && (
+          <div className="flex items-center gap-2 text-sm">
+            <label className="text-muted-foreground">Club :</label>
+            <select
+              value={clubId ?? ""}
+              onChange={(e) => setSelectedClubId(e.target.value)}
+              className="border rounded-md px-2 py-1 bg-background"
+            >
+              {clubs.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
         {list.length === 0 && (
           <p className="text-muted-foreground">Aucun évènement à venir pour ce club.</p>
         )}
