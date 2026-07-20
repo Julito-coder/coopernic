@@ -42,8 +42,11 @@ function EventsPage() {
     enabled: !!userId,
     queryFn: () => ctxFn(),
   });
-  const clubId = ctx.data?.clubId ?? null;
   const isManager = ctx.data?.isManager ?? false;
+  const isSuperadmin = ctx.data?.isSuperadmin ?? false;
+  const clubs = ctx.data?.clubs ?? [];
+  const [selectedClubId, setSelectedClubId] = useState<string | null>(null);
+  const clubId = selectedClubId ?? ctx.data?.clubId ?? null;
 
   const events = useQuery({
     queryKey: ["events", clubId],
