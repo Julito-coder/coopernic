@@ -240,7 +240,7 @@ function MapView({ members }: { members: Member[] }) {
 
   return (
     <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_360px]">
-      <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-primary to-[oklch(0.3_0.08_265)] p-6 shadow-elevated">
+      <div className="relative overflow-hidden rounded-3xl border border-border bg-primary p-6 shadow-elevated">
         <div className="absolute inset-0 bg-mesh opacity-30" />
         <div className="relative aspect-[4/5] w-full md:aspect-[5/4]">
           <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full">
@@ -299,7 +299,7 @@ function MapView({ members }: { members: Member[] }) {
                 onMouseLeave={() => setHover(null)}
                 className="flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-secondary"
               >
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-accent text-xs font-bold text-primary-foreground">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-xs font-bold text-primary-foreground">
                   {m.initials}
                 </div>
                 <div className="min-w-0 flex-1">
