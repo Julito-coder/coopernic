@@ -266,7 +266,16 @@ export const revokeMemberRole = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => RevokeSchema.parse(input))
   .handler(async ({ data, context }) => {
-    await assertSuperadmin(context.supabase, context.userId);
+    const { isSuper, isManager } = await isSuperOrManager(
+      context.supabase,
+      context.userId,
+      data.clubId ?? "",
+    );
+    if (!isSuper) {
+      if (!isManager) throw new Error("Non autorisé.");
+      if (data.role === "superadmin") throw new Error("Réservé au super admin.");
+      if (!data.clubId) throw new Error("Club requis.");
+    }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     let q = supabaseAdmin
