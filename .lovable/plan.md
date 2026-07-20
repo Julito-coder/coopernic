@@ -1,64 +1,81 @@
-## Objectif
+## Direction
 
-Permettre à un gestionnaire de club de créer une **cagnotte** (autonome ou liée à un évènement) pour financer une dépense collective. Les membres du club paient leur quote-part en ligne via Stripe, **une seule fois par membre**, avec **division dynamique** : tant que la cagnotte est ouverte, la part = `objectif ÷ nombre de membres ayant cliqué "je participe"` (recalculée à chaque nouvel inscrit, jusqu'à clôture).
+Mode **clair, éditorial, aéré**. Fond `#FFFFFF` par défaut, crème `#F3EFE6` réservé aux surfaces qui doivent respirer (cartes hero, encadrés, banners), navy `#0b1428` uniquement pour le texte et les CTA principaux, or `#D4A24C` en accent chirurgical (liens actifs, KPIs clés, badges premium — jamais en aplat de fond large).
 
-## Outil retenu
+Mobile-first : chaque écran est pensé colonne unique, sections empilées pleine largeur, respiration verticale généreuse (densité 2/5). Le desktop est une conséquence, pas la référence.
 
-**Stripe intégré Lovable** (`enable_stripe_payments`). Avantages :
-- Aucun compte Stripe à créer côté gestionnaire, KYC géré par Lovable.
-- Liens de paiement (Stripe Checkout) générables par cagnotte.
-- Webhooks signés → on suit en temps réel les paiements dans l'app.
-- Frais ~1,5% + 0,25 € (CB UE). Pas de tax handling nécessaire (cagnotte = collecte interne au club, pas une vente).
+## 1 · Design tokens (fondation)
 
-Alternatives écartées : Leetchi/HelloAsso (lien externe, pas de contrôle "1 paiement/membre" ni split auto dans l'app) ; Lydia (pas d'API marchand grand public).
+Réécriture de `src/styles.css` :
 
-## Parcours utilisateur
+- `--background: #FFFFFF`, `--foreground: #0b1428`
+- `--surface: #F3EFE6` (crème), `--surface-strong: #FAF8F2`
+- `--border: #E8E4D9` (bord chaud très doux, pas de gris froid)
+- `--muted: #F7F5EF`, `--muted-foreground: #5B6070`
+- `--primary: #0b1428` / `--primary-foreground: #FFFFFF`
+- `--accent: #D4A24C` / `--accent-foreground: #0b1428`
+- `--ring: color-mix(in oklab, #D4A24C 60%, transparent)`
+- `--radius: 14px` (rayons plus doux qu'aujourd'hui, cohérents partout)
+- Nouvelles ombres légères basées sur navy à 6-8% d'opacité (pas de noir pur)
+- Suppression des variantes dark hors-charte (on garde `.dark` mais on ne l'active plus par défaut)
 
-**Gestionnaire (`/club`, nouvel onglet "Cagnottes")**
-1. Crée une cagnotte : titre, description, objectif (€), date de clôture, évènement lié (optionnel — liste les events du club), visibilité (tous les membres / membres inscrits à l'event).
-2. Voit la liste de ses cagnottes avec progression (€ collecté / objectif, nb participants, part actuelle, statut).
-3. Peut clôturer, relancer les non-payeurs (email), exporter la liste.
+Typo Manrope conservée. Échelle typographique retouchée : titres plus fins (`font-weight: 700` max, plus `800` réservé au logo), body `text-[15px] leading-relaxed` sur mobile.
 
-**Membre (`/club` → cagnottes visibles, + bandeau sur la fiche event)**
-1. Voit les cagnottes ouvertes de son club avec part suggérée temps réel.
-2. Clique "Je participe" → s'ajoute aux inscrits (recalcule la part pour tous).
-3. Clique "Payer ma part" → Stripe Checkout avec le montant exact, retour vers `/club/cagnottes/:id` avec confirmation.
-4. Un membre ne peut payer **qu'une fois** par cagnotte (contrôle DB + check côté serveur avant création du Checkout).
+## 2 · Header & navigation mobile
 
-## Plan d'exécution (4 batchs)
+`src/components/AppHeader.tsx` :
 
-**Batch 1 — Activation Stripe + schéma DB**
-- `enable_stripe_payments` (tax option 3 : pas d'automatisation, c'est une collecte interne).
-- Migration : tables `pots` (id, club_id, event_id?, title, description, goal_cents, deadline, status: open/closed/cancelled, created_by), `pot_participants` (pot_id, member_id, joined_at — pour la division dynamique), `pot_payments` (id, pot_id, member_id UNIQUE(pot_id,member_id), amount_cents, stripe_session_id, stripe_payment_intent, status: pending/paid/refunded, paid_at).
-- RLS : gestionnaire CRUD sur cagnottes de son club ; membres voient/participent/paient les cagnottes de leur club ; superadmin tout.
+- Sur mobile, la nav horizontale disparaît → **bottom tab bar** fixe (5 items max : Accueil, Annuaire, Messages, Cagnottes, Évènements) avec icônes Lucide, label court, actif = navy + or dessous.
+- Overflow ("Stats", "Mon club", "Super admin") dans un menu "Plus" (drawer).
+- Le header top reste minimal : logo à gauche, avatar rôle à droite, plus de dropdown "démo" visible par défaut sur mobile (déplacé dans le menu profil).
+- Desktop : nav horizontale conservée mais allégée (spacing +, poids typographique réduit).
 
-**Batch 2 — UI gestionnaire**
-- Onglet "Cagnottes" dans `/club` (gestionnaire uniquement) : liste + bouton "Créer une cagnotte" + modale de création (avec sélecteur d'évènement optionnel).
-- Page détail cagnotte : KPIs (collecté, part courante, participants, payeurs), tableau membres avec statut (inscrit / payé / en attente), actions clôturer + relancer.
+## 3 · Landing publique (`src/routes/index.tsx`)
 
-**Batch 3 — UI membre + checkout Stripe**
-- Section "Cagnottes du club" visible par les membres + encart sur la fiche évènement quand une cagnotte est liée.
-- Bouton "Je participe" → server fn `joinPot` (insère dans `pot_participants`, recalcule part affichée).
-- Bouton "Payer ma part X €" → server fn `createPotCheckout` : vérifie membre inscrit + non-payeur, calcule la part courante, crée la Stripe Checkout Session, retourne l'URL.
-- Page de retour avec confirmation + invalidation du cache.
+Refonte en **sections pleines empilées** :
 
-**Batch 4 — Webhook Stripe + finalisation**
-- Server route `/api/public/stripe-webhook` (signature vérifiée) : sur `checkout.session.completed`, marque `pot_payments.status = paid`, enregistre `paid_at`.
-- Logique de clôture : à la `deadline` ou via clic gestionnaire → `status = closed`, plus de nouveaux paiements, part finale figée.
-- Email transactionnel au membre : confirmation paiement + reçu Stripe. Email au gestionnaire à chaque paiement.
+```text
+[hero]        titre éditorial navy, sous-titre muted, 1 CTA or, mockup mobile à droite (desktop) ou dessous (mobile)
+[preuve]      bandeau crème avec 3-4 chiffres clés (or pour les nombres, navy pour les labels)
+[valeur x3]   3 sections pleines alternées blanc/crème, chaque section = un pilier (Réseau, Business tracking, Gestion club) avec 1 visuel + 1 paragraphe court
+[cible]       "Pour les fondateurs de clubs business" — carte crème, ton direct
+[cta final]   bande navy pleine largeur (seule zone sombre de la page), CTA or contrasté
+[footer]      minimal, liens légaux
+```
 
-## Détails techniques
+Retrait du hero glow/mesh actuel : trop chargé et hors-registre light. Remplacé par une composition typographique + un accent or ponctuel (filet, chiffre, badge).
 
-- **Division dynamique** : la "part courante" est calculée à la volée (`goal_cents / count(participants)`), pas stockée. Au moment du paiement, on fige le montant dans la Checkout Session (sinon un retard d'inscription après création de session ferait diverger montant payé vs part affichée — accepté côté produit, le surplus reste à la cagnotte).
-- **1 paiement/membre** : contrainte UNIQUE(pot_id, member_id) sur `pot_payments` + check serveur avant Checkout.
-- **Liaison event** : `pots.event_id` nullable → cagnotte peut exister seule (cadeau, charity) ou liée à un event. Quand liée, la liste "participants" peut être pré-remplie depuis les inscrits event (option à la création).
-- **Sécurité** : tous les montants calculés côté serveur (server fn), jamais depuis le client. Webhook vérifie signature Stripe avant écriture.
+## 4 · Écrans connectés
 
-## Hors-scope V1 (à confirmer plus tard)
+Même grammaire partout : titre de page (H1 navy), sous-titre muted, contenu en cartes blanches sur fond blanc avec bord `--border` et rayon 14px. Le crème sert de séparateur de sections, pas de fond général.
 
-- Remboursements partiels / annulation de cagnotte avec remboursement auto.
-- Cagnottes inter-clubs.
-- Paiement Apple Pay / Google Pay (Stripe Checkout les gère automatiquement, donc en pratique inclus).
-- Reversement automatique des fonds vers un IBAN du club (V1 : les fonds restent sur le compte Stripe Lovable, virement manuel sur demande — à valider avec toi selon la structure juridique des clubs).
+- **Annuaire** (`src/routes/annuaire.tsx`, `MemberCard.tsx`) : filtres en haut sticky mobile, cartes membres simplifiées (photo/initiales, nom, société, tags), badge or "Réseau Coopernic" pour les membres externes.
+- **Messages** (`src/routes/messages.tsx`) : liste conversations pleine largeur mobile, thread en push-view. Bulles : sortantes = navy/blanc, entrantes = crème/navy. Bouton "Reco" à côté du champ, en accent or.
+- **Stats** (`src/routes/recos.tsx`) : KPIs en cartes empilées mobile (2 colonnes desktop), tableaux transformés en listes-cartes sur mobile.
+- **Cagnottes** (`src/routes/cagnottes.tsx`) : card cagnotte avec barre de progression or, KPIs alignés verticalement mobile.
+- **Évènements** (`src/routes/evenements.tsx`) : card évènement, sondage inline avec barres de progression navy/or, bouton "Ouvrir dans Maps" texte or.
+- **Mon club / Admin** (`src/routes/club.tsx`, `src/routes/admin.tsx`) : tables → listes-cartes mobile, actions primaires en bas d'écran sticky (pattern iOS-like).
+- **Auth** (`login`, `auth/set-password`) : carte centrée max-w-sm sur fond crème.
 
-⚠️ **Point juridique à clarifier avant Batch 1** : selon la structure des clubs (association loi 1901 vs entreprise vs informel), la collecte de fonds via Stripe Lovable peut nécessiter un statut spécifique. Je recommande de valider avec un comptable, ou alors basculer en V1 sur des **liens Leetchi/HelloAsso externes** (où chaque club gère sa propre cagnotte légalement) et garder Stripe pour la V2.
+## 5 · Composants transverses
+
+- Boutons : primaire navy plein, secondaire ghost navy avec bord, accent or réservé au CTA principal d'une page.
+- Inputs : bord `--border`, focus ring or, hauteur 44px mini (tap target mobile).
+- Bandeaux (test mode Stripe, invitation) : fond crème + filet or à gauche, plus jamais rouge/orange criard sauf erreur bloquante.
+
+## Fichiers modifiés
+
+- `src/styles.css` — refonte complète des tokens
+- `src/components/AppHeader.tsx` — bottom tab bar mobile + header allégé
+- **Nouveau** `src/components/MobileTabBar.tsx`
+- `src/routes/index.tsx` — refonte landing
+- `src/routes/__root.tsx` — meta + link Manrope inchangés, padding bottom pour tab bar
+- Retouches ciblées : `annuaire.tsx`, `messages.tsx`, `recos.tsx`, `cagnottes.tsx`, `evenements.tsx`, `club.tsx`, `admin.tsx`, `login.tsx`, `MemberCard.tsx`, `RecoComposer.tsx`, `PaymentTestModeBanner.tsx`, `ClubPotsSection.tsx`, `PotEmbeddedCheckout.tsx`
+
+Aucun changement de logique business, de schéma DB, ni de server function — c'est un pass presentation/UX pur.
+
+## Hors-scope
+
+- Pas de mode dark (mis en veille, tokens conservés mais non exposés).
+- Pas de nouveau logo ni de nouvelles illustrations générées ce tour-ci — on peut en ajouter après validation de la direction.
+- Pas de refonte du checkout Stripe embarqué (contraint par Stripe).
