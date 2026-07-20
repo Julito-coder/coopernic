@@ -215,7 +215,18 @@ export const setMemberRole = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => SetRoleSchema.parse(input))
   .handler(async ({ data, context }) => {
-    await assertSuperadmin(context.supabase, context.userId);
+    const { isSuper, isManager } = await isSuperOrManager(
+      context.supabase,
+      context.userId,
+      data.clubId ?? "",
+    );
+    if (!isSuper) {
+      // Un gestionnaire peut promouvoir/rétrograder au sein de SON club uniquement,
+      // et jamais attribuer le rôle superadmin.
+      if (!isManager) throw new Error("Non autorisé.");
+      if (data.role === "superadmin") throw new Error("Réservé au super admin.");
+      if (!data.clubId) throw new Error("Club requis.");
+    }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     // Superadmin est un rôle global (sans club)
