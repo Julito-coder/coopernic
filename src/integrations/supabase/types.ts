@@ -44,6 +44,115 @@ export type Database = {
         }
         Relationships: []
       }
+      event_responses: {
+        Row: {
+          event_id: string
+          id: string
+          option_index: number
+          responded_at: string
+          user_id: string
+        }
+        Insert: {
+          event_id: string
+          id?: string
+          option_index: number
+          responded_at?: string
+          user_id: string
+        }
+        Update: {
+          event_id?: string
+          id?: string
+          option_index?: number
+          responded_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_responses_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          club_id: string
+          created_at: string
+          created_by: string
+          description: string | null
+          ends_at: string | null
+          id: string
+          is_paid: boolean
+          location_address: string | null
+          location_lat: number | null
+          location_lng: number | null
+          location_name: string | null
+          poll_options: Json
+          poll_question: string | null
+          poll_results_visible: boolean
+          practical_info: string | null
+          price_cents: number | null
+          starts_at: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          created_by: string
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          is_paid?: boolean
+          location_address?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          location_name?: string | null
+          poll_options?: Json
+          poll_question?: string | null
+          poll_results_visible?: boolean
+          practical_info?: string | null
+          price_cents?: number | null
+          starts_at: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          is_paid?: boolean
+          location_address?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          location_name?: string | null
+          poll_options?: Json
+          poll_question?: string | null
+          poll_results_visible?: boolean
+          practical_info?: string | null
+          price_cents?: number | null
+          starts_at?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       members: {
         Row: {
           activated_at: string | null
@@ -285,6 +394,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_member_of_club: { Args: { _club_id: string }; Returns: boolean }
       managed_club_id: { Args: { _user_id: string }; Returns: string }
     }
     Enums: {
