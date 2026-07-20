@@ -273,25 +273,28 @@ function MessagesPage() {
       </div>
 
       {/* Reco composer */}
-      <RecoComposer
-        open={recoOpen}
-        onClose={() => setRecoOpen(false)}
-        toMember={member}
-        conversationId={activeId}
-        onSent={(reco) => {
-          pushMessage({
-            attachment: {
-              kind: "reco",
-              recoId: reco.id,
-              prospectName: reco.prospectName,
-              prospectCompany: reco.prospectCompany,
-              description: reco.description,
-              estimatedAmount: reco.estimatedAmount,
-              status: reco.status,
-            },
-          });
-        }}
-      />
+      {member && (
+        <RecoComposer
+          open={recoOpen}
+          onClose={() => setRecoOpen(false)}
+          toMember={member}
+          conversationId={activeId}
+          onSent={(reco) => {
+            pushMessage({
+              attachment: {
+                kind: "reco",
+                recoId: reco.id,
+                prospectName: reco.prospectName,
+                prospectCompany: reco.prospectCompany,
+                description: reco.description,
+                estimatedAmount: reco.estimatedAmount,
+                status: reco.status,
+              },
+            });
+          }}
+        />
+      )}
+
 
       {/* Contact picker modal */}
       {contactPickerOpen && (
