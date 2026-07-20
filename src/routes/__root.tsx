@@ -68,7 +68,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "Coopernic — Échangez. Collaborez. Développez." },
       { name: "description", content: "La plateforme dédiée aux clubs business et réseaux professionnels : annuaire, messagerie, business tracking et évènements." },
       { name: "author", content: "Coopernic" },
-      { name: "theme-color", content: "#0b1428" },
+      { name: "theme-color", content: "#FFFFFF" },
       { property: "og:title", content: "Coopernic — Échangez. Collaborez. Développez." },
       { property: "og:description", content: "La plateforme dédiée aux clubs business et réseaux professionnels : annuaire, messagerie, business tracking et évènements." },
       { property: "og:type", content: "website" },
@@ -112,10 +112,10 @@ function RootComponent() {
       <AuthSync />
       <div className="flex min-h-screen flex-col bg-background">
         <AppHeader />
-        <main className="flex-1">
+        <main className="flex-1 pb-16 md:pb-0">
           <Outlet />
         </main>
-        <footer className="border-t border-border/60 bg-surface">
+        <footer className="hidden border-t border-border/60 bg-cream md:block">
           <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-6 py-6 text-xs text-muted-foreground md:flex-row">
             <div>© {new Date().getFullYear()} Coopernic · Tous droits réservés</div>
             <div className="flex gap-4">
@@ -130,6 +130,7 @@ function RootComponent() {
     </QueryClientProvider>
   );
 }
+
 
 function AuthSync() {
   const router = useRouter();

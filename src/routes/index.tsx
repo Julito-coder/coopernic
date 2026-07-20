@@ -6,9 +6,7 @@ import {
   TrendingUp,
   ArrowRight,
   Check,
-  Sparkles,
 } from "lucide-react";
-import appIcon from "@/assets/coopernic-app-icon.jpg";
 import appMockup from "@/assets/coopernic-app-mockup.png";
 
 export const Route = createFileRoute("/")({
@@ -28,209 +26,249 @@ export const Route = createFileRoute("/")({
 function Landing() {
   return (
     <div className="bg-background text-foreground">
-      {/* HERO */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-mesh opacity-80" />
-        <div className="relative mx-auto max-w-5xl px-6 pt-20 pb-24 md:pt-28 md:pb-32 text-center">
-          <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">
-            <Sparkles className="h-3 w-3" />
-            Pensé pour les dirigeants de clubs business
+      {/* HERO — blanc, éditorial */}
+      <section className="mx-auto max-w-6xl px-5 pt-10 pb-14 md:px-8 md:pt-20 md:pb-24">
+        <div className="grid items-center gap-10 md:grid-cols-[1.1fr_0.9fr] md:gap-16">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-accent/40 bg-accent/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-accent">
+              Pour les fondateurs de clubs business
+            </div>
+
+            <h1 className="mt-6 font-display text-[38px] font-bold leading-[1.05] tracking-tight text-balance text-foreground md:text-6xl">
+              Le système
+              <br />
+              d'exploitation de
+              <br />
+              <span className="text-accent">votre club business.</span>
+            </h1>
+
+            <p className="mt-5 max-w-xl text-[15px] leading-relaxed text-muted-foreground md:text-lg">
+              Annuaire, évènements, cagnottes, recommandations. Une seule app
+              pour animer vos membres et prouver la valeur du club — pas 12 outils.
+            </p>
+
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link
+                to="/login"
+                className="inline-flex h-12 items-center gap-2 rounded-full bg-accent px-6 text-sm font-bold text-accent-foreground shadow-glow transition-transform hover:-translate-y-0.5"
+              >
+                Réserver une démo
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link
+                to="/annuaire"
+                className="inline-flex h-12 items-center gap-2 rounded-full border border-border bg-background px-6 text-sm font-semibold text-foreground hover:bg-secondary"
+              >
+                Voir le produit
+              </Link>
+            </div>
+
+            <p className="mt-4 text-xs text-muted-foreground">
+              Essai 30 jours · Sans carte · Migration depuis Excel offerte
+            </p>
           </div>
 
-          <h1 className="mt-8 font-display text-5xl font-extrabold leading-[1.05] tracking-tight text-balance md:text-7xl">
-            Votre club,
-            <br />
-            <span className="text-accent">dans la poche.</span>
-          </h1>
-
-          <p className="mx-auto mt-7 max-w-2xl text-lg leading-relaxed text-ink-muted md:text-xl">
-            Démarquez-vous : offrez à vos membres un outil clé en main.
-            Recommandations, paiements, annuaire, événements — réunis dans une seule app,
-            pour que vous passiez vos soirées à animer
-            votre cercle, pas à relancer des impayés.
-          </p>
-
-          <div className="mt-10 flex flex-wrap justify-center gap-3">
-            <Link
-              to="/login"
-              className="inline-flex items-center gap-2 rounded-full bg-accent px-7 py-3.5 text-sm font-bold text-accent-foreground shadow-glow transition-transform hover:-translate-y-0.5"
-            >
-              Réserver une démo
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link
-              to="/annuaire"
-              className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/60 px-7 py-3.5 text-sm font-semibold text-foreground backdrop-blur transition-colors hover:bg-surface"
-            >
-              Voir le produit
-            </Link>
-          </div>
-
-          <p className="mt-6 text-xs text-muted-foreground">
-            Essai 30 jours · Sans carte · Migration depuis Excel offerte
-          </p>
-
-          {/* APP MOCKUP */}
-          <div className="relative mx-auto mt-16 w-full max-w-sm md:max-w-md">
-            <div className="absolute -inset-10 -z-10 rounded-full bg-accent/20 blur-3xl" />
+          <div className="relative mx-auto w-full max-w-[280px] md:max-w-sm">
+            <div className="absolute -inset-8 -z-10 rounded-full bg-accent/15 blur-3xl" />
             <img
               src={appMockup}
               alt="Aperçu de l'application Coopernic sur mobile"
               width={1024}
               height={1536}
-              className="mx-auto w-full drop-shadow-2xl"
+              className="w-full drop-shadow-xl"
             />
           </div>
         </div>
       </section>
 
-      {/* PAIN POINTS → SOLUTION */}
-      <section className="mx-auto max-w-6xl px-6 py-20">
-        <div className="grid items-center gap-12 lg:grid-cols-2">
-          <div>
-            <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-accent">
-              Ce que vous vivez aujourd'hui
+      {/* PREUVE — bandeau crème avec chiffres clés */}
+      <section className="bg-cream">
+        <div className="mx-auto grid max-w-6xl grid-cols-2 gap-6 px-5 py-10 md:grid-cols-4 md:px-8 md:py-14">
+          {[
+            { n: "1", l: "app pour tout piloter" },
+            { n: "-2 h", l: "de logistique par semaine" },
+            { n: "+30 %", l: "de renouvellements" },
+            { n: "0 €", l: "d'Excel dans votre soirée" },
+          ].map((k) => (
+            <div key={k.l} className="text-center md:text-left">
+              <div className="font-display text-3xl font-bold text-accent md:text-4xl">
+                {k.n}
+              </div>
+              <div className="mt-1 text-xs font-medium uppercase tracking-wider text-muted-foreground md:text-sm md:normal-case md:tracking-normal md:text-foreground/70">
+                {k.l}
+              </div>
             </div>
-            <h2 className="mt-3 font-display text-4xl font-bold tracking-tight">
-              Animer un club, c'est un métier.<br />
-              Le gérer ne devrait pas en être un autre.
-            </h2>
-            <ul className="mt-8 space-y-4 text-base text-ink-muted">
-              {[
-                "Un Excel des membres, un Google Form pour les events, un autre pour les cotisations.",
-                "Vous relancez à la main les impayés et les inscriptions.",
-                "Vos membres ne mesurent pas le ROI du club — donc certains ne renouvellent pas.",
-                "Le bureau passe plus de temps en logistique qu'en stratégie.",
-              ].map((t) => (
-                <li key={t} className="flex gap-3">
-                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
-                  <span>{t}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="relative rounded-3xl border border-border bg-surface-elevated p-8 shadow-elevated">
-            <div className="absolute -top-4 left-8 inline-flex items-center gap-2 rounded-full bg-accent px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-accent-foreground">
-              Avec Coopernic
-            </div>
-            <ul className="mt-2 space-y-4">
-              {[
-                "Un seul outil pour vos membres, vos events, vos cotisations.",
-                "Relances automatiques, paiements en ligne, présences scannées.",
-                "Chaque membre voit ce que le club lui rapporte — concrètement.",
-                "Vous reprenez du temps pour ce qui compte : la vie du cercle.",
-              ].map((t) => (
-                <li key={t} className="flex gap-3 text-sm font-medium text-foreground">
-                  <Check className="mt-0.5 h-5 w-5 shrink-0 text-accent" />
-                  <span>{t}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+          ))}
         </div>
       </section>
 
-      {/* MODULES */}
-      <section className="border-y border-border/60 bg-surface/40">
-        <div className="mx-auto max-w-6xl px-6 py-20">
-          <div className="mx-auto max-w-2xl text-center">
-            <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-accent">
-              Le système Coopernic
-            </div>
-            <h2 className="mt-3 font-display text-4xl font-bold tracking-tight">
-              Quatre modules. Une seule app. Zéro friction.
-            </h2>
-          </div>
+      {/* VALEUR × 3 — sections pleines alternées */}
+      <ValueBlock
+        eyebrow="Réseau"
+        Icon={Users}
+        title="Vos membres se trouvent en 10 secondes."
+        body="Annuaire vivant avec recherche, filtres, entreprises et villes. Un membre = une fiche business à jour, pas une ligne d'Excel."
+        bullets={[
+          "Fiches business complètes",
+          "Recherche & filtres instantanés",
+          "Ouverture inter-clubs Coopernic",
+        ]}
+      />
 
-          <div className="mt-14 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+      <ValueBlock
+        eyebrow="Business tracking"
+        Icon={TrendingUp}
+        title="La preuve chiffrée que le club rapporte."
+        body="Recommandations, deals signés, CA généré, ROI par membre. Vos adhérents voient ce que le club leur rend — et renouvellent."
+        bullets={[
+          "Reco en un clic depuis la messagerie",
+          "Statuts contacté / deal / no deal",
+          "Commissionnement & facturation",
+        ]}
+        reverse
+        tone="cream"
+      />
+
+      <ValueBlock
+        eyebrow="Gestion club"
+        Icon={CalendarCheck}
+        title="Vos soirées, animées. Pas relancées."
+        body="Évènements, sondages de présence, cagnottes, cotisations Stripe. Le bureau anime, la plateforme s'occupe du reste."
+        bullets={[
+          "Évènements + sondage de présence",
+          "Cagnottes payables en ligne",
+          "Cotisations Stripe & relances auto",
+        ]}
+      />
+
+      {/* CIBLE */}
+      <section className="mx-auto max-w-6xl px-5 py-14 md:px-8 md:py-20">
+        <div className="rounded-2xl border border-border bg-cream p-6 md:p-12">
+          <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-accent">
+            Pour qui
+          </div>
+          <h2 className="mt-3 font-display text-2xl font-bold tracking-tight md:text-4xl">
+            Vous fondez ou dirigez un club business.
+            <br />
+            <span className="text-muted-foreground font-medium">
+              Coopernic est fait pour vous.
+            </span>
+          </h2>
+          <ul className="mt-6 grid gap-3 text-[15px] md:mt-8 md:grid-cols-2 md:gap-4">
             {[
-              {
-                icon: Users,
-                title: "Annuaire vivant",
-                desc: "Fiches business, recherche, filtres, carte. Vos membres se trouvent en 10 secondes.",
-              },
-              {
-                icon: CalendarCheck,
-                title: "Événements",
-                desc: "Inscriptions, paiement, check-in QR, calendrier sync. Plus de tableurs.",
-              },
-              {
-                icon: Wallet,
-                title: "Cotisations",
-                desc: "Stripe intégré, relances auto, exports comptables. Vous ne courez plus après l'argent.",
-              },
-              {
-                icon: TrendingUp,
-                title: "Business tracking",
-                desc: "Recos, deals signés, ROI par membre. La preuve chiffrée que le club rapporte.",
-              },
-            ].map((m) => (
-              <div
-                key={m.title}
-                className="group rounded-2xl border border-border bg-card p-6 transition-all hover:-translate-y-1 hover:border-accent/40 hover:shadow-elevated"
-              >
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent/15 text-accent">
-                  <m.icon className="h-5 w-5" />
-                </div>
-                <h3 className="mt-5 font-display text-lg font-bold text-foreground">
-                  {m.title}
-                </h3>
-                <p className="mt-2 text-sm leading-relaxed text-ink-muted">{m.desc}</p>
-              </div>
+              "Vous voulez démarquer votre club face aux autres réseaux.",
+              "Vos membres réclament un outil, pas un Google Drive.",
+              "Vous voulez chiffrer le ROI du club, pas juste le raconter.",
+              "Vous n'avez pas 6 mois pour faire développer une app.",
+            ].map((t) => (
+              <li key={t} className="flex gap-3">
+                <Check className="mt-0.5 h-5 w-5 shrink-0 text-accent" />
+                <span>{t}</span>
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       </section>
 
-      {/* SOCIAL PROOF / QUOTE */}
-      <section className="mx-auto max-w-4xl px-6 py-24 text-center">
-        <div className="font-display text-3xl font-bold leading-[1.25] tracking-tight text-foreground md:text-4xl">
-          <span className="text-accent">«</span> Notre bureau a récupéré
-          deux soirées par mois. Et les membres voient enfin la valeur de leur cotisation.
-          <span className="text-accent">»</span>
-        </div>
-        <div className="mt-6 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-          Président · Club business régional · 84 membres
-        </div>
-      </section>
-
-      {/* CTA FINAL */}
-      <section className="mx-auto max-w-6xl px-6 pb-24">
-        <div className="relative overflow-hidden rounded-3xl border border-accent/20 bg-gradient-to-br from-surface-elevated via-surface to-primary p-10 shadow-elevated md:p-16">
-          <div className="absolute -right-12 -top-12 h-64 w-64 rounded-full bg-accent/15 blur-3xl" />
-          <div className="relative grid items-center gap-10 md:grid-cols-[1fr_auto]">
-            <div>
-              <h2 className="font-display text-3xl font-bold tracking-tight text-foreground md:text-4xl text-balance">
-                Prêt à transformer votre club en machine à ROI ?
-              </h2>
-              <p className="mt-4 max-w-xl text-base text-ink-muted">
-                30 minutes de démo, on vous montre comment vos membres, vos events
-                et vos cotisations tiennent dans une seule app — la vôtre.
-              </p>
-              <div className="mt-7 flex flex-wrap gap-3">
-                <Link
-                  to="/login"
-                  className="inline-flex items-center gap-2 rounded-full bg-accent px-6 py-3 text-sm font-bold text-accent-foreground shadow-glow transition-transform hover:-translate-y-0.5"
-                >
-                  Réserver ma démo <ArrowRight className="h-4 w-4" />
-                </Link>
-                <a
-                  href="mailto:hello@coopernic.fr"
-                  className="inline-flex items-center gap-2 rounded-full border border-border bg-background/40 px-6 py-3 text-sm font-semibold text-foreground hover:bg-background/70"
-                >
-                  Nous écrire
-                </a>
-              </div>
-            </div>
-            <img
-              src={appIcon}
-              alt="Coopernic app"
-              className="hidden h-32 w-32 rounded-3xl shadow-elevated ring-1 ring-accent/30 md:block"
-            />
+      {/* CTA FINAL — bande navy pleine largeur */}
+      <section className="bg-primary text-primary-foreground">
+        <div className="mx-auto max-w-4xl px-5 py-16 text-center md:px-8 md:py-24">
+          <h2 className="font-display text-3xl font-bold tracking-tight text-balance md:text-5xl">
+            Prêt à transformer votre club
+            <br />
+            <span className="text-accent">en machine à ROI ?</span>
+          </h2>
+          <p className="mx-auto mt-5 max-w-xl text-base text-primary-foreground/80 md:text-lg">
+            30 minutes de démo. On vous montre comment vos membres, vos évènements
+            et vos cotisations tiennent dans une seule app — la vôtre.
+          </p>
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <Link
+              to="/login"
+              className="inline-flex h-12 items-center gap-2 rounded-full bg-accent px-7 text-sm font-bold text-accent-foreground shadow-glow transition-transform hover:-translate-y-0.5"
+            >
+              Réserver ma démo <ArrowRight className="h-4 w-4" />
+            </Link>
+            <a
+              href="mailto:hello@coopernic.fr"
+              className="inline-flex h-12 items-center gap-2 rounded-full border border-primary-foreground/30 bg-transparent px-7 text-sm font-semibold text-primary-foreground hover:bg-primary-foreground/10"
+            >
+              Nous écrire
+            </a>
           </div>
         </div>
       </section>
     </div>
+  );
+}
+
+function ValueBlock({
+  eyebrow,
+  Icon,
+  title,
+  body,
+  bullets,
+  reverse,
+  tone,
+}: {
+  eyebrow: string;
+  Icon: typeof Users;
+  title: string;
+  body: string;
+  bullets: string[];
+  reverse?: boolean;
+  tone?: "cream";
+}) {
+  return (
+    <section className={tone === "cream" ? "bg-cream" : "bg-background"}>
+      <div
+        className={`mx-auto grid max-w-6xl items-center gap-10 px-5 py-14 md:grid-cols-2 md:gap-16 md:px-8 md:py-24 ${
+          reverse ? "md:[&>*:first-child]:order-2" : ""
+        }`}
+      >
+        <div>
+          <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-accent/15 text-accent">
+            <Icon className="h-5 w-5" />
+          </div>
+          <div className="mt-4 text-[10px] font-bold uppercase tracking-[0.2em] text-accent">
+            {eyebrow}
+          </div>
+          <h2 className="mt-2 font-display text-3xl font-bold leading-tight tracking-tight md:text-4xl">
+            {title}
+          </h2>
+          <p className="mt-4 text-[15px] leading-relaxed text-muted-foreground md:text-base">
+            {body}
+          </p>
+          <ul className="mt-6 space-y-2.5 text-sm">
+            {bullets.map((b) => (
+              <li key={b} className="flex gap-2.5">
+                <Check className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+                <span>{b}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="relative">
+          <div className="aspect-[4/3] rounded-2xl border border-border bg-cream-soft p-8 shadow-card md:aspect-[5/4]">
+            <div className="h-full w-full rounded-xl border border-border/70 bg-background p-6">
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-accent" />
+                <div className="h-2 w-16 rounded-full bg-muted" />
+              </div>
+              <div className="mt-5 space-y-2.5">
+                <div className="h-3 w-3/4 rounded bg-muted" />
+                <div className="h-3 w-full rounded bg-muted" />
+                <div className="h-3 w-2/3 rounded bg-muted" />
+              </div>
+              <div className="mt-6 grid grid-cols-2 gap-3">
+                <div className="h-16 rounded-lg border border-border bg-cream" />
+                <div className="h-16 rounded-lg border border-accent/30 bg-accent/10" />
+              </div>
+              <div className="mt-4 h-10 rounded-lg bg-primary" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
