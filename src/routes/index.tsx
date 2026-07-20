@@ -1,4 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
 import {
   Users,
   CalendarCheck,
@@ -8,6 +9,7 @@ import {
   Check,
 } from "lucide-react";
 import appMockup from "@/assets/coopernic-app-mockup.png";
+import { useSession } from "@/lib/use-session";
 
 export const Route = createFileRoute("/")({
   component: Landing,
@@ -24,6 +26,36 @@ export const Route = createFileRoute("/")({
 });
 
 function Landing() {
+  const { user, roles, loading } = useSession();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (loading || !user) return;
+    // Onboarding : première connexion → slides d'accueil
+    const onboardedKey = `coopernic.onboarded.${user.id}`;
+    const onboarded =
+      typeof window !== "undefined" && localStorage.getItem(onboardedKey) === "1";
+    if (!onboarded) {
+      navigate({ to: "/bienvenue", replace: true });
+      return;
+    }
+    // Redirection selon le rôle
+    if (roles.includes("superadmin")) navigate({ to: "/admin", replace: true });
+    else if (roles.includes("gestionnaire")) navigate({ to: "/club", replace: true });
+    else navigate({ to: "/annuaire", replace: true });
+  }, [loading, user, roles, navigate]);
+
+  // Utilisateurs non connectés : landing marketing.
+  // Utilisateurs connectés : écran neutre pendant la redirection.
+  if (user) {
+    return <div className="min-h-[60vh]" aria-hidden />;
+  }
+
+  return LandingMarketing();
+}
+
+function LandingMarketing() {
+
   return (
     <div className="bg-background text-foreground">
       {/* HERO — blanc, éditorial */}

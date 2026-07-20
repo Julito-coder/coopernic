@@ -1,9 +1,7 @@
-import { useEffect, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import logoMark from "@/assets/coopernic-mark.png";
-import { useAuth, type Role } from "@/lib/auth-store";
-import { useSession, signOut } from "@/lib/use-session";
+import { useSession, signOut, type AppRole } from "@/lib/use-session";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,6 +28,7 @@ import {
   Shield,
 } from "lucide-react";
 
+type Role = AppRole;
 
 type NavItem = {
   to: string;
@@ -57,17 +56,26 @@ const ROLE_META: Record<Role, { label: string; icon: typeof User; tone: string }
   membre: { label: "Membre", icon: User, tone: "text-muted-foreground" },
 };
 
+function pickRole(roles: Role[]): Role {
+  if (roles.includes("superadmin")) return "superadmin";
+  if (roles.includes("gestionnaire")) return "gestionnaire";
+  return "membre";
+}
+
 export function AppHeader() {
-  const { session } = useAuth();
   const real = useSession();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-  const effectiveRole: Role = mounted ? session.role : "membre";
-  const effectiveDisplayName = mounted ? session.displayName : "Membre";
+  const signedIn = !!real.user;
+  const effectiveRole: Role = signedIn ? pickRole(real.roles) : "membre";
+  const effectiveDisplayName =
+    (real.user?.user_metadata?.full_name as string | undefined) ??
+    real.user?.email?.split("@")[0] ??
+    "Membre";
   const items = NAV.filter((n) => n.roles.includes(effectiveRole));
   const primaryItems = items.filter((i) => i.primary).slice(0, 5);
   const overflowItems = items.filter((i) => !i.primary);
   const RoleIcon = ROLE_META[effectiveRole].icon;
+
+
   
 
   return (

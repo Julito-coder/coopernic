@@ -14,6 +14,7 @@ import { Route as MessagesRouteImport } from './routes/messages'
 import { Route as EvenementsRouteImport } from './routes/evenements'
 import { Route as ClubRouteImport } from './routes/club'
 import { Route as CagnottesRouteImport } from './routes/cagnottes'
+import { Route as BienvenueRouteImport } from './routes/bienvenue'
 import { Route as AnnuaireRouteImport } from './routes/annuaire'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
@@ -46,6 +47,11 @@ const ClubRoute = ClubRouteImport.update({
 const CagnottesRoute = CagnottesRouteImport.update({
   id: '/cagnottes',
   path: '/cagnottes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BienvenueRoute = BienvenueRouteImport.update({
+  id: '/bienvenue',
+  path: '/bienvenue',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AnnuaireRoute = AnnuaireRouteImport.update({
@@ -94,6 +100,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/annuaire': typeof AnnuaireRoute
+  '/bienvenue': typeof BienvenueRoute
   '/cagnottes': typeof CagnottesRouteWithChildren
   '/club': typeof ClubRoute
   '/evenements': typeof EvenementsRoute
@@ -109,6 +116,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/annuaire': typeof AnnuaireRoute
+  '/bienvenue': typeof BienvenueRoute
   '/cagnottes': typeof CagnottesRouteWithChildren
   '/club': typeof ClubRoute
   '/evenements': typeof EvenementsRoute
@@ -125,6 +133,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/annuaire': typeof AnnuaireRoute
+  '/bienvenue': typeof BienvenueRoute
   '/cagnottes': typeof CagnottesRouteWithChildren
   '/club': typeof ClubRoute
   '/evenements': typeof EvenementsRoute
@@ -142,6 +151,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/annuaire'
+    | '/bienvenue'
     | '/cagnottes'
     | '/club'
     | '/evenements'
@@ -157,6 +167,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/annuaire'
+    | '/bienvenue'
     | '/cagnottes'
     | '/club'
     | '/evenements'
@@ -172,6 +183,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/annuaire'
+    | '/bienvenue'
     | '/cagnottes'
     | '/club'
     | '/evenements'
@@ -188,6 +200,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
   AnnuaireRoute: typeof AnnuaireRoute
+  BienvenueRoute: typeof BienvenueRoute
   CagnottesRoute: typeof CagnottesRouteWithChildren
   ClubRoute: typeof ClubRoute
   EvenementsRoute: typeof EvenementsRoute
@@ -234,6 +247,13 @@ declare module '@tanstack/react-router' {
       path: '/cagnottes'
       fullPath: '/cagnottes'
       preLoaderRoute: typeof CagnottesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bienvenue': {
+      id: '/bienvenue'
+      path: '/bienvenue'
+      fullPath: '/bienvenue'
+      preLoaderRoute: typeof BienvenueRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/annuaire': {
@@ -311,6 +331,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
   AnnuaireRoute: AnnuaireRoute,
+  BienvenueRoute: BienvenueRoute,
   CagnottesRoute: CagnottesRouteWithChildren,
   ClubRoute: ClubRoute,
   EvenementsRoute: EvenementsRoute,
