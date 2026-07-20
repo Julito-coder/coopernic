@@ -1,16 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState, useRef, useEffect } from "react";
-import {
-  CONVERSATIONS,
-  MESSAGE_THREADS,
-  MEMBERS,
-  getMember,
-  type Message,
-  type MessageAttachment,
-} from "@/lib/mock-data";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useSession } from "@/lib/use-session";
 import { RecoComposer } from "@/components/RecoComposer";
 import { STATUS_LABEL } from "@/lib/recos-store";
-import { Paperclip, Image as ImageIcon, UserPlus, Sparkles, Send, X, Search } from "lucide-react";
+import type { Message, MessageAttachment } from "@/lib/mock-data";
+import { Paperclip, Image as ImageIcon, UserPlus, Sparkles, Send, X, Search, Plus, MessageSquarePlus } from "lucide-react";
 
 export const Route = createFileRoute("/messages")({
   component: MessagesPage,
@@ -22,40 +18,106 @@ export const Route = createFileRoute("/messages")({
   }),
 });
 
+type ClubMember = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  initials: string;
+  role: string;
+  company: string;
+  email: string;
+};
+
+function initialsOf(first: string, last: string) {
+  return `${(first[0] ?? "").toUpperCase()}${(last[0] ?? "").toUpperCase()}`;
+}
+
 function MessagesPage() {
-  const [activeId, setActiveId] = useState<string>(CONVERSATIONS[0]?.id ?? "");
+  const { user, loading } = useSession();
+
+  // Charger les membres de mon club (via RLS: is_member_of_club)
+  const membersQ = useQuery({
+    enabled: !!user,
+    queryKey: ["messages", "club-members", user?.id],
+    queryFn: async (): Promise<ClubMember[]> => {
+      // Trouver mon club_id à partir de mon email
+      const email = user?.email;
+      if (!email) return [];
+      const { data: me } = await supabase
+        .from("members")
+        .select("club_id")
+        .ilike("email", email)
+        .maybeSingle();
+      const clubId = me?.club_id;
+      if (!clubId) return [];
+      const { data, error } = await supabase
+        .from("members")
+        .select("id, first_name, last_name, email, role, company")
+        .eq("club_id", clubId)
+        .neq("id", user!.id)
+        .order("first_name");
+      if (error) throw error;
+      return (data ?? []).map((m: any) => ({
+        id: m.id,
+        firstName: m.first_name ?? "",
+        lastName: m.last_name ?? "",
+        initials: initialsOf(m.first_name ?? "", m.last_name ?? ""),
+        role: m.role ?? "",
+        company: m.company ?? "",
+        email: m.email ?? "",
+      }));
+    },
+  });
+
+  const members = membersQ.data ?? [];
+  const memberById = useMemo(() => {
+    const map: Record<string, ClubMember> = {};
+    members.forEach((m) => (map[m.id] = m));
+    return map;
+  }, [members]);
+
+  // Conversations = liste de memberIds initiés localement
+  const [conversationIds, setConversationIds] = useState<string[]>([]);
+  const [activeId, setActiveId] = useState<string>("");
   const [query, setQuery] = useState("");
   const [drafts, setDrafts] = useState<Record<string, string>>({});
-  const [extraMessages, setExtraMessages] = useState<Record<string, Message[]>>({});
+  const [threads, setThreads] = useState<Record<string, Message[]>>({});
   const [recoOpen, setRecoOpen] = useState(false);
   const [contactPickerOpen, setContactPickerOpen] = useState(false);
+  const [newConvOpen, setNewConvOpen] = useState(false);
   const [attachMenuOpen, setAttachMenuOpen] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const filtered = useMemo(() => {
+  const conversations = useMemo(() => {
+    return conversationIds
+      .map((id) => memberById[id])
+      .filter((m): m is ClubMember => !!m);
+  }, [conversationIds, memberById]);
+
+  const filteredConvs = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return CONVERSATIONS;
-    return CONVERSATIONS.filter((c) => {
-      const m = getMember(c.memberId);
-      if (!m) return false;
-      return (
-        `${m.firstName} ${m.lastName}`.toLowerCase().includes(q) ||
-        c.lastMessage.toLowerCase().includes(q)
-      );
-    });
-  }, [query]);
+    if (!q) return conversations;
+    return conversations.filter((m) =>
+      `${m.firstName} ${m.lastName} ${m.company}`.toLowerCase().includes(q),
+    );
+  }, [conversations, query]);
 
-  const conv = CONVERSATIONS.find((c) => c.id === activeId);
-  const member = conv ? getMember(conv.memberId) : undefined;
-  const thread = conv ? [...(MESSAGE_THREADS[conv.id] ?? []), ...(extraMessages[conv.id] ?? [])] : [];
-
+  const member = activeId ? memberById[activeId] : undefined;
+  const thread = activeId ? threads[activeId] ?? [] : [];
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [activeId, extraMessages]);
+  }, [activeId, threads]);
+
+  const startConversation = (memberId: string) => {
+    setConversationIds((prev) => (prev.includes(memberId) ? prev : [memberId, ...prev]));
+    setActiveId(memberId);
+    setNewConvOpen(false);
+  };
 
   const pushMessage = (msg: Omit<Message, "id" | "at" | "from"> & { from?: "me" | "them" }) => {
+    if (!activeId) return;
     const now = new Date();
     const at = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
     const full: Message = {
@@ -65,13 +127,14 @@ function MessagesPage() {
       attachment: msg.attachment,
       at,
     };
-    setExtraMessages((prev) => ({
+    setThreads((prev) => ({
       ...prev,
       [activeId]: [...(prev[activeId] ?? []), full],
     }));
   };
 
   const send = () => {
+    if (!activeId) return;
     const text = (drafts[activeId] ?? "").trim();
     if (!text) return;
     pushMessage({ text });
@@ -88,19 +151,39 @@ function MessagesPage() {
     setAttachMenuOpen(false);
   };
 
+  const availableForNewConv = members.filter((m) => !conversationIds.includes(m.id));
+
   return (
     <div className="mx-auto max-w-7xl px-6 py-10">
-      <div className="mb-6">
-        <div className="text-xs font-bold uppercase tracking-[0.2em] text-accent">Messagerie</div>
-        <h1 className="mt-2 font-display text-3xl font-extrabold tracking-tight text-foreground md:text-4xl">
-          Vos conversations
-        </h1>
+      <div className="mb-6 flex items-end justify-between gap-4">
+        <div>
+          <div className="text-xs font-bold uppercase tracking-[0.2em] text-accent">Messagerie</div>
+          <h1 className="mt-2 font-display text-3xl font-extrabold tracking-tight text-foreground md:text-4xl">
+            Vos conversations
+          </h1>
+        </div>
+        <button
+          type="button"
+          onClick={() => setNewConvOpen(true)}
+          disabled={!user || availableForNewConv.length === 0}
+          className="hidden items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-bold text-accent-foreground shadow-sm transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40 md:inline-flex"
+        >
+          <MessageSquarePlus className="h-4 w-4" /> Nouvelle conversation
+        </button>
       </div>
 
       <div className="grid h-[calc(100vh-260px)] min-h-[560px] gap-4 overflow-hidden rounded-3xl border border-border bg-surface shadow-card md:grid-cols-[340px_1fr]">
         {/* Sidebar */}
         <aside className="flex flex-col border-r border-border/70">
-          <div className="border-b border-border/70 p-4">
+          <div className="space-y-2 border-b border-border/70 p-4">
+            <button
+              type="button"
+              onClick={() => setNewConvOpen(true)}
+              disabled={!user || availableForNewConv.length === 0}
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-accent/40 bg-accent/10 px-3 py-2 text-sm font-bold text-accent transition-colors hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Plus className="h-4 w-4" /> Nouvelle conversation
+            </button>
             <div className="relative">
               <input
                 type="search"
@@ -113,13 +196,13 @@ function MessagesPage() {
             </div>
           </div>
           <ul className="flex-1 overflow-y-auto">
-            {filtered.map((c) => {
-              const m = getMember(c.memberId)!;
-              const active = c.id === activeId;
+            {filteredConvs.map((m) => {
+              const active = m.id === activeId;
+              const last = threads[m.id]?.slice(-1)[0];
               return (
-                <li key={c.id}>
+                <li key={m.id}>
                   <button
-                    onClick={() => setActiveId(c.id)}
+                    onClick={() => setActiveId(m.id)}
                     className={
                       "flex w-full items-center gap-3 border-l-2 px-4 py-3 text-left transition-colors " +
                       (active
@@ -135,24 +218,32 @@ function MessagesPage() {
                         <span className="truncate text-sm font-semibold text-foreground">
                           {m.firstName} {m.lastName}
                         </span>
-                        <span className="shrink-0 text-[10px] text-muted-foreground">{c.lastAt}</span>
+                        {last && (
+                          <span className="shrink-0 text-[10px] text-muted-foreground">{last.at}</span>
+                        )}
                       </div>
-                      <p className="truncate text-xs text-ink-muted">{c.lastMessage}</p>
+                      <p className="truncate text-xs text-ink-muted">
+                        {last?.text ?? (last?.attachment ? "Pièce jointe" : "Nouvelle discussion")}
+                      </p>
                     </div>
-                    {c.unread > 0 && !active && (
-                      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1.5 text-[10px] font-bold text-accent-foreground">
-                        {c.unread}
-                      </span>
-                    )}
                   </button>
                 </li>
               );
             })}
+            {filteredConvs.length === 0 && (
+              <li className="px-4 py-8 text-center text-xs text-ink-muted">
+                {loading
+                  ? "Chargement…"
+                  : conversations.length === 0
+                    ? "Aucune conversation. Démarrez-en une avec un membre de votre club."
+                    : "Aucun résultat."}
+              </li>
+            )}
           </ul>
         </aside>
 
         {/* Conversation */}
-        {conv && member ? (
+        {member ? (
         <section className="flex min-w-0 flex-col">
           <header className="flex items-center justify-between gap-4 border-b border-border/70 px-6 py-4">
             <div className="flex items-center gap-3">
@@ -178,15 +269,19 @@ function MessagesPage() {
           {/* Thread */}
           <div className="flex-1 space-y-2 overflow-y-auto bg-background/40 px-4 py-6 md:px-6">
             {thread.map((m) => (
-              <ChatBubble key={m.id} message={m} />
+              <ChatBubble key={m.id} message={m} memberById={memberById} />
             ))}
+            {thread.length === 0 && (
+              <div className="flex h-full items-center justify-center text-center text-xs text-ink-muted">
+                Envoyez votre premier message à {member.firstName}.
+              </div>
+            )}
             <div ref={endRef} />
           </div>
 
           {/* Composer */}
           <div className="border-t border-border/70 bg-surface p-3">
             <div className="flex items-end gap-2 rounded-2xl border border-border bg-background p-2 focus-within:ring-2 focus-within:ring-ring/50">
-              {/* + button with attach menu */}
               <div className="relative">
                 <button
                   type="button"
@@ -256,17 +351,22 @@ function MessagesPage() {
                 <Send className="h-4 w-4" />
               </button>
             </div>
-            <p className="mt-2 px-1 text-[11px] text-muted-foreground">
-              ↵ Envoyer · ⇧↵ Nouvelle ligne · 📎 Photo · 👤 Contact · ✨ Reco
-            </p>
           </div>
         </section>
         ) : (
           <section className="flex min-w-0 flex-col items-center justify-center p-10 text-center">
-            <div className="font-display text-lg font-bold text-foreground">Aucune conversation</div>
+            <div className="font-display text-lg font-bold text-foreground">Aucune conversation sélectionnée</div>
             <p className="mt-2 max-w-sm text-sm text-ink-muted">
-              Les échanges apparaîtront ici dès que des membres se contacteront.
+              Cliquez sur « Nouvelle conversation » pour choisir un membre de votre club et commencer à échanger.
             </p>
+            <button
+              type="button"
+              onClick={() => setNewConvOpen(true)}
+              disabled={!user || availableForNewConv.length === 0}
+              className="mt-6 inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-bold text-accent-foreground disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <MessageSquarePlus className="h-4 w-4" /> Nouvelle conversation
+            </button>
           </section>
         )}
 
@@ -277,7 +377,13 @@ function MessagesPage() {
         <RecoComposer
           open={recoOpen}
           onClose={() => setRecoOpen(false)}
-          toMember={member}
+          toMember={{
+            id: member.id,
+            firstName: member.firstName,
+            lastName: member.lastName,
+            role: member.role,
+            company: member.company,
+          } as any}
           conversationId={activeId}
           onSent={(reco) => {
             pushMessage({
@@ -295,10 +401,23 @@ function MessagesPage() {
         />
       )}
 
+      {/* Nouvelle conversation */}
+      {newConvOpen && (
+        <MemberPicker
+          title="Démarrer une conversation"
+          members={availableForNewConv}
+          emptyLabel="Tous les membres de votre club ont déjà une conversation."
+          onClose={() => setNewConvOpen(false)}
+          onPick={startConversation}
+        />
+      )}
 
-      {/* Contact picker modal */}
+      {/* Contact picker (partage) */}
       {contactPickerOpen && (
-        <ContactPicker
+        <MemberPicker
+          title="Partager un contact"
+          members={members}
+          emptyLabel="Aucun membre dans votre club."
           onClose={() => setContactPickerOpen(false)}
           onPick={(memberId) => {
             pushMessage({ attachment: { kind: "contact", memberId } });
@@ -330,7 +449,7 @@ function AttachOption({
   );
 }
 
-function ChatBubble({ message }: { message: Message }) {
+function ChatBubble({ message, memberById }: { message: Message; memberById: Record<string, ClubMember> }) {
   const mine = message.from === "me";
   const a = message.attachment;
   return (
@@ -353,7 +472,7 @@ function ChatBubble({ message }: { message: Message }) {
           </a>
         )}
 
-        {a?.kind === "contact" && <ContactCard memberId={a.memberId} mine={mine} />}
+        {a?.kind === "contact" && <ContactCard memberId={a.memberId} mine={mine} memberById={memberById} />}
         {a?.kind === "reco" && <RecoCard a={a} mine={mine} />}
 
         {message.text && (
@@ -371,8 +490,8 @@ function ChatBubble({ message }: { message: Message }) {
   );
 }
 
-function ContactCard({ memberId, mine }: { memberId: string; mine: boolean }) {
-  const m = getMember(memberId);
+function ContactCard({ memberId, mine, memberById }: { memberId: string; mine: boolean; memberById: Record<string, ClubMember> }) {
+  const m = memberById[memberId];
   if (!m) return null;
   return (
     <Link
@@ -441,22 +560,28 @@ function RecoCard({ a, mine }: {
   );
 }
 
-function ContactPicker({
-  onClose, onPick,
-}: { onClose: () => void; onPick: (id: string) => void }) {
+function MemberPicker({
+  title, members, emptyLabel, onClose, onPick,
+}: {
+  title: string;
+  members: ClubMember[];
+  emptyLabel: string;
+  onClose: () => void;
+  onPick: (id: string) => void;
+}) {
   const [q, setQ] = useState("");
   const list = useMemo(() => {
     const s = q.trim().toLowerCase();
-    if (!s) return MEMBERS;
-    return MEMBERS.filter((m) =>
-      `${m.firstName} ${m.lastName} ${m.company} ${m.role}`.toLowerCase().includes(s)
+    if (!s) return members;
+    return members.filter((m) =>
+      `${m.firstName} ${m.lastName} ${m.company} ${m.role}`.toLowerCase().includes(s),
     );
-  }, [q]);
+  }, [q, members]);
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/40 px-4 backdrop-blur-sm">
       <div className="w-full max-w-md overflow-hidden rounded-2xl border border-border bg-surface shadow-elevated">
         <header className="flex items-center justify-between border-b border-border/70 px-5 py-4">
-          <h2 className="font-display text-lg font-extrabold">Partager un contact</h2>
+          <h2 className="font-display text-lg font-extrabold">{title}</h2>
           <button onClick={onClose} className="rounded-full p-1.5 text-ink-muted hover:bg-secondary hover:text-foreground">
             <X className="h-4 w-4" />
           </button>
@@ -492,6 +617,9 @@ function ContactPicker({
               </button>
             </li>
           ))}
+          {list.length === 0 && (
+            <li className="px-5 py-8 text-center text-xs text-ink-muted">{emptyLabel}</li>
+          )}
         </ul>
       </div>
     </div>
