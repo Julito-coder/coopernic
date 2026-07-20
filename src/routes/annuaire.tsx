@@ -76,8 +76,12 @@ function AnnuaireePage() {
   useEffect(() => setMounted(true), []);
   const openClubsCount = mounted ? listClubs().filter((c) => c.openToNetwork).length : 0;
 
+  if (!mounted) {
+    return <div className="mx-auto max-w-7xl px-6 py-12" />;
+  }
 
   return (
+
     <div className="mx-auto max-w-7xl px-6 py-12">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
