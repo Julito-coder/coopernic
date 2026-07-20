@@ -82,33 +82,33 @@ export function AppHeader() {
   return (
     <>
       <header className="sticky top-0 z-40 border-b border-border/70 bg-background/90 backdrop-blur-xl">
-        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 md:h-16 md:px-6">
-          <Link to="/" className="group flex items-center gap-2.5">
+        <div className="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4 md:h-16 md:px-6">
+          <Link to="/" className="group flex min-w-0 shrink items-center gap-2.5">
             <img
               src={logoMark}
               alt="Coopernic"
-              className="h-9 w-9 rounded-[10px] object-cover ring-1 ring-border transition-transform group-hover:scale-105"
+              className="h-9 w-9 shrink-0 rounded-[10px] object-cover ring-1 ring-border transition-transform group-hover:scale-105"
             />
-            <div className="leading-tight">
-              <div className="font-display text-[16px] font-extrabold tracking-tight text-foreground">
+            <div className="min-w-0 leading-tight">
+              <div className="truncate font-display text-[16px] font-extrabold tracking-tight text-foreground">
                 coopern<span className="text-accent">i</span>c
               </div>
-              <div className="hidden text-[9px] font-semibold uppercase tracking-[0.22em] text-muted-foreground sm:block">
+              <div className="hidden truncate text-[9px] font-semibold uppercase tracking-[0.22em] text-muted-foreground xl:block">
                 Échangez · Collaborez · Développez
               </div>
             </div>
           </Link>
 
           {/* Desktop nav */}
-          <nav className="hidden items-center gap-1 md:flex">
+          <nav className="ml-auto hidden min-w-0 items-center gap-0.5 lg:flex">
             {items.map((item) => (
               <Link
                 key={item.to}
                 to={item.to}
-                className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                className="whitespace-nowrap rounded-md px-2.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
                 activeProps={{
                   className:
-                    "rounded-md px-3 py-2 text-sm font-semibold text-foreground bg-secondary",
+                    "whitespace-nowrap rounded-md px-2.5 py-2 text-sm font-semibold text-foreground bg-secondary",
                 }}
                 activeOptions={{ exact: item.to === "/" }}
               >
@@ -117,7 +117,7 @@ export function AppHeader() {
             ))}
           </nav>
 
-          <div className="flex items-center gap-2">
+          <div className="ml-auto flex shrink-0 items-center gap-2 lg:ml-2">
             {signedIn && <NotificationBell />}
             <ProfileMenu
               effectiveRole={effectiveRole}
@@ -128,12 +128,13 @@ export function AppHeader() {
           </div>
 
 
+
         </div>
       </header>
 
       {/* Mobile bottom tab bar */}
       <nav
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-background/95 backdrop-blur-xl md:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-background/95 backdrop-blur-xl lg:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         <div className="grid grid-cols-6">
