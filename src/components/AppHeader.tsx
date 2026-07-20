@@ -20,9 +20,18 @@ const baseNav = [
   { to: "/", label: "Accueil", roles: ["superadmin", "gestionnaire", "membre"] as Role[] },
   { to: "/annuaire", label: "Annuaire", roles: ["superadmin", "gestionnaire", "membre"] as Role[] },
   { to: "/messages", label: "Messages", roles: ["superadmin", "gestionnaire", "membre"] as Role[] },
+  { to: "/events", label: "Agenda", roles: ["superadmin", "gestionnaire", "membre"] as Role[] },
   { to: "/recos", label: "Stats", roles: ["superadmin", "gestionnaire", "membre"] as Role[] },
-  { to: "/cagnottes", label: "Cagnottes", roles: ["superadmin", "gestionnaire", "membre"] as Role[] },
-  { to: "/evenements", label: "Évènements", roles: ["superadmin", "gestionnaire", "membre"] as Role[] },
+  {
+    to: "/cagnottes",
+    label: "Cagnottes",
+    roles: ["superadmin", "gestionnaire", "membre"] as Role[],
+  },
+  {
+    to: "/evenements",
+    label: "Évènements",
+    roles: ["superadmin", "gestionnaire", "membre"] as Role[],
+  },
   { to: "/club", label: "Mon club", roles: ["superadmin", "gestionnaire"] as Role[] },
   { to: "/admin", label: "Super Admin", roles: ["superadmin"] as Role[] },
 ] as const;
@@ -82,7 +91,9 @@ export function AppHeader() {
 
         <DropdownMenu>
           <DropdownMenuTrigger className="flex items-center gap-2 rounded-full border border-border/60 bg-card py-1.5 pl-2 pr-3 text-left transition-colors hover:bg-secondary">
-            <div className={`flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-bold text-accent ring-1 ring-border ${ROLE_META[effectiveRole].tone}`}>
+            <div
+              className={`flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-bold text-accent ring-1 ring-border ${ROLE_META[effectiveRole].tone}`}
+            >
               <RoleIcon className="h-4 w-4" />
             </div>
             <div className="hidden leading-tight md:block">
@@ -105,7 +116,8 @@ export function AppHeader() {
               <DropdownMenuSubContent className="max-h-72 overflow-y-auto">
                 {members.map((m) => (
                   <DropdownMenuItem key={m.id} onClick={() => loginAs("gestionnaire", m.id)}>
-                    {m.firstName} {m.lastName} <span className="ml-1 text-xs text-muted-foreground">· {m.club}</span>
+                    {m.firstName} {m.lastName}{" "}
+                    <span className="ml-1 text-xs text-muted-foreground">· {m.club}</span>
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuSubContent>
@@ -117,7 +129,8 @@ export function AppHeader() {
               <DropdownMenuSubContent className="max-h-72 overflow-y-auto">
                 {members.map((m) => (
                   <DropdownMenuItem key={m.id} onClick={() => loginAs("membre", m.id)}>
-                    {m.firstName} {m.lastName} <span className="ml-1 text-xs text-muted-foreground">· {m.club}</span>
+                    {m.firstName} {m.lastName}{" "}
+                    <span className="ml-1 text-xs text-muted-foreground">· {m.club}</span>
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuSubContent>
@@ -129,7 +142,9 @@ export function AppHeader() {
               </DropdownMenuItem>
             ) : (
               <DropdownMenuItem asChild>
-                <Link to="/login"><LogIn className="mr-2 h-4 w-4" /> Connexion réelle</Link>
+                <Link to="/login">
+                  <LogIn className="mr-2 h-4 w-4" /> Connexion réelle
+                </Link>
               </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />

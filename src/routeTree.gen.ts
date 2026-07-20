@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as RecosRouteImport } from './routes/recos'
 import { Route as MessagesRouteImport } from './routes/messages'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as EventsRouteImport } from './routes/events'
 import { Route as EvenementsRouteImport } from './routes/evenements'
 import { Route as ClubRouteImport } from './routes/club'
 import { Route as CagnottesRouteImport } from './routes/cagnottes'
@@ -19,8 +20,10 @@ import { Route as AnnuaireRouteImport } from './routes/annuaire'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as MembresIdRouteImport } from './routes/membres.$id'
+import { Route as EventsIdRouteImport } from './routes/events_.$id'
 import { Route as CagnottesReturnRouteImport } from './routes/cagnottes.return'
 import { Route as AuthSetPasswordRouteImport } from './routes/auth.set-password'
+import { Route as EventsIdCheckinRouteImport } from './routes/events_.$id_.checkin'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 
 const RecosRoute = RecosRouteImport.update({
@@ -36,6 +39,11 @@ const MessagesRoute = MessagesRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EventsRoute = EventsRouteImport.update({
+  id: '/events',
+  path: '/events',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EvenementsRoute = EvenementsRouteImport.update({
@@ -73,6 +81,11 @@ const MembresIdRoute = MembresIdRouteImport.update({
   path: '/membres/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EventsIdRoute = EventsIdRouteImport.update({
+  id: '/events_/$id',
+  path: '/events/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CagnottesReturnRoute = CagnottesReturnRouteImport.update({
   id: '/return',
   path: '/return',
@@ -81,6 +94,11 @@ const CagnottesReturnRoute = CagnottesReturnRouteImport.update({
 const AuthSetPasswordRoute = AuthSetPasswordRouteImport.update({
   id: '/auth/set-password',
   path: '/auth/set-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EventsIdCheckinRoute = EventsIdCheckinRouteImport.update({
+  id: '/events_/$id_/checkin',
+  path: '/events/$id/checkin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicPaymentsWebhookRoute =
@@ -97,12 +115,15 @@ export interface FileRoutesByFullPath {
   '/cagnottes': typeof CagnottesRouteWithChildren
   '/club': typeof ClubRoute
   '/evenements': typeof EvenementsRoute
+  '/events': typeof EventsRoute
   '/login': typeof LoginRoute
   '/messages': typeof MessagesRoute
   '/recos': typeof RecosRoute
   '/auth/set-password': typeof AuthSetPasswordRoute
   '/cagnottes/return': typeof CagnottesReturnRoute
+  '/events/$id': typeof EventsIdRoute
   '/membres/$id': typeof MembresIdRoute
+  '/events/$id/checkin': typeof EventsIdCheckinRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRoutesByTo {
@@ -112,12 +133,15 @@ export interface FileRoutesByTo {
   '/cagnottes': typeof CagnottesRouteWithChildren
   '/club': typeof ClubRoute
   '/evenements': typeof EvenementsRoute
+  '/events': typeof EventsRoute
   '/login': typeof LoginRoute
   '/messages': typeof MessagesRoute
   '/recos': typeof RecosRoute
   '/auth/set-password': typeof AuthSetPasswordRoute
   '/cagnottes/return': typeof CagnottesReturnRoute
+  '/events/$id': typeof EventsIdRoute
   '/membres/$id': typeof MembresIdRoute
+  '/events/$id/checkin': typeof EventsIdCheckinRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRoutesById {
@@ -128,12 +152,15 @@ export interface FileRoutesById {
   '/cagnottes': typeof CagnottesRouteWithChildren
   '/club': typeof ClubRoute
   '/evenements': typeof EvenementsRoute
+  '/events': typeof EventsRoute
   '/login': typeof LoginRoute
   '/messages': typeof MessagesRoute
   '/recos': typeof RecosRoute
   '/auth/set-password': typeof AuthSetPasswordRoute
   '/cagnottes/return': typeof CagnottesReturnRoute
+  '/events_/$id': typeof EventsIdRoute
   '/membres/$id': typeof MembresIdRoute
+  '/events_/$id_/checkin': typeof EventsIdCheckinRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRouteTypes {
@@ -145,12 +172,15 @@ export interface FileRouteTypes {
     | '/cagnottes'
     | '/club'
     | '/evenements'
+    | '/events'
     | '/login'
     | '/messages'
     | '/recos'
     | '/auth/set-password'
     | '/cagnottes/return'
+    | '/events/$id'
     | '/membres/$id'
+    | '/events/$id/checkin'
     | '/api/public/payments/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -160,12 +190,15 @@ export interface FileRouteTypes {
     | '/cagnottes'
     | '/club'
     | '/evenements'
+    | '/events'
     | '/login'
     | '/messages'
     | '/recos'
     | '/auth/set-password'
     | '/cagnottes/return'
+    | '/events/$id'
     | '/membres/$id'
+    | '/events/$id/checkin'
     | '/api/public/payments/webhook'
   id:
     | '__root__'
@@ -175,12 +208,15 @@ export interface FileRouteTypes {
     | '/cagnottes'
     | '/club'
     | '/evenements'
+    | '/events'
     | '/login'
     | '/messages'
     | '/recos'
     | '/auth/set-password'
     | '/cagnottes/return'
+    | '/events_/$id'
     | '/membres/$id'
+    | '/events_/$id_/checkin'
     | '/api/public/payments/webhook'
   fileRoutesById: FileRoutesById
 }
@@ -191,11 +227,14 @@ export interface RootRouteChildren {
   CagnottesRoute: typeof CagnottesRouteWithChildren
   ClubRoute: typeof ClubRoute
   EvenementsRoute: typeof EvenementsRoute
+  EventsRoute: typeof EventsRoute
   LoginRoute: typeof LoginRoute
   MessagesRoute: typeof MessagesRoute
   RecosRoute: typeof RecosRoute
   AuthSetPasswordRoute: typeof AuthSetPasswordRoute
+  EventsIdRoute: typeof EventsIdRoute
   MembresIdRoute: typeof MembresIdRoute
+  EventsIdCheckinRoute: typeof EventsIdCheckinRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
 }
 
@@ -220,6 +259,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/events': {
+      id: '/events'
+      path: '/events'
+      fullPath: '/events'
+      preLoaderRoute: typeof EventsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/evenements': {
@@ -271,6 +317,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MembresIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/events_/$id': {
+      id: '/events_/$id'
+      path: '/events/$id'
+      fullPath: '/events/$id'
+      preLoaderRoute: typeof EventsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/cagnottes/return': {
       id: '/cagnottes/return'
       path: '/return'
@@ -283,6 +336,13 @@ declare module '@tanstack/react-router' {
       path: '/auth/set-password'
       fullPath: '/auth/set-password'
       preLoaderRoute: typeof AuthSetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/events_/$id_/checkin': {
+      id: '/events_/$id_/checkin'
+      path: '/events/$id/checkin'
+      fullPath: '/events/$id/checkin'
+      preLoaderRoute: typeof EventsIdCheckinRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/payments/webhook': {
@@ -314,13 +374,26 @@ const rootRouteChildren: RootRouteChildren = {
   CagnottesRoute: CagnottesRouteWithChildren,
   ClubRoute: ClubRoute,
   EvenementsRoute: EvenementsRoute,
+  EventsRoute: EventsRoute,
   LoginRoute: LoginRoute,
   MessagesRoute: MessagesRoute,
   RecosRoute: RecosRoute,
   AuthSetPasswordRoute: AuthSetPasswordRoute,
+  EventsIdRoute: EventsIdRoute,
   MembresIdRoute: MembresIdRoute,
+  EventsIdCheckinRoute: EventsIdCheckinRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

@@ -44,6 +44,147 @@ export type Database = {
         }
         Relationships: []
       }
+      club_events: {
+        Row: {
+          capacity: number | null
+          club_id: string
+          created_at: string
+          created_by: string
+          description: string | null
+          ends_at: string | null
+          event_type: string | null
+          format: string
+          id: string
+          location_address: string | null
+          location_name: string | null
+          online_url: string | null
+          recurrence_group_id: string | null
+          starts_at: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          capacity?: number | null
+          club_id: string
+          created_at?: string
+          created_by: string
+          description?: string | null
+          ends_at?: string | null
+          event_type?: string | null
+          format?: string
+          id?: string
+          location_address?: string | null
+          location_name?: string | null
+          online_url?: string | null
+          recurrence_group_id?: string | null
+          starts_at: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          capacity?: number | null
+          club_id?: string
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          ends_at?: string | null
+          event_type?: string | null
+          format?: string
+          id?: string
+          location_address?: string | null
+          location_name?: string | null
+          online_url?: string | null
+          recurrence_group_id?: string | null
+          starts_at?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_events_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      club_event_registrations: {
+        Row: {
+          checked_in_at: string | null
+          created_by: string
+          event_id: string
+          guest_email: string | null
+          guest_name: string | null
+          id: string
+          member_id: string | null
+          registered_at: string
+          status: string
+        }
+        Insert: {
+          checked_in_at?: string | null
+          created_by: string
+          event_id: string
+          guest_email?: string | null
+          guest_name?: string | null
+          id?: string
+          member_id?: string | null
+          registered_at?: string
+          status?: string
+        }
+        Update: {
+          checked_in_at?: string | null
+          created_by?: string
+          event_id?: string
+          guest_email?: string | null
+          guest_name?: string | null
+          id?: string
+          member_id?: string | null
+          registered_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_event_registrations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "club_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      club_event_checkin_tokens: {
+        Row: {
+          created_at: string
+          event_id: string
+          rotated_at: string
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          rotated_at?: string
+          token?: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          rotated_at?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_event_checkin_tokens_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: true
+            referencedRelation: "club_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_responses: {
         Row: {
           event_id: string
@@ -396,6 +537,20 @@ export type Database = {
       }
       is_member_of_club: { Args: { _club_id: string }; Returns: boolean }
       managed_club_id: { Args: { _user_id: string }; Returns: string }
+      self_checkin: { Args: { _event_id: string; _token: string }; Returns: Json }
+      club_event_set_checkin: {
+        Args: { _registration_id: string; _present: boolean }
+        Returns: Json
+      }
+      club_event_counts_for_club: {
+        Args: { _club_id: string }
+        Returns: {
+          event_id: string
+          registered: number
+          waitlist: number
+          checked_in: number
+        }[]
+      }
     }
     Enums: {
       app_role: "superadmin" | "gestionnaire" | "membre"
