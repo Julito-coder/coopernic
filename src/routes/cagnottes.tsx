@@ -52,7 +52,7 @@ function CagnottesPage() {
   if (!userId)
     return (
       <div className="p-8">
-        <Link to="/login" className="underline">
+        <Link to="/auth" className="underline">
           Connecte-toi
         </Link>{" "}
         pour voir les cagnottes.

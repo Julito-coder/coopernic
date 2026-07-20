@@ -235,7 +235,7 @@ function ProfileMenu({
           </DropdownMenuItem>
         ) : (
           <DropdownMenuItem asChild>
-            <Link to="/login"><LogIn className="mr-2 h-4 w-4" /> Connexion réelle</Link>
+            <Link to="/auth"><LogIn className="mr-2 h-4 w-4" /> Connexion réelle</Link>
           </DropdownMenuItem>
         )}
       </DropdownMenuContent>

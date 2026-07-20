@@ -17,6 +17,7 @@ import { Route as CagnottesRouteImport } from './routes/cagnottes'
 import { Route as AnnuaireRouteImport } from './routes/annuaire'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthIndexRouteImport } from './routes/auth.index'
 import { Route as MembresIdRouteImport } from './routes/membres.$id'
 import { Route as CagnottesReturnRouteImport } from './routes/cagnottes.return'
 import { Route as AuthSetPasswordRouteImport } from './routes/auth.set-password'
@@ -62,6 +63,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthIndexRoute = AuthIndexRouteImport.update({
+  id: '/auth/',
+  path: '/auth/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MembresIdRoute = MembresIdRouteImport.update({
   id: '/membres/$id',
   path: '/membres/$id',
@@ -96,6 +102,7 @@ export interface FileRoutesByFullPath {
   '/auth/set-password': typeof AuthSetPasswordRoute
   '/cagnottes/return': typeof CagnottesReturnRoute
   '/membres/$id': typeof MembresIdRoute
+  '/auth/': typeof AuthIndexRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRoutesByTo {
@@ -110,6 +117,7 @@ export interface FileRoutesByTo {
   '/auth/set-password': typeof AuthSetPasswordRoute
   '/cagnottes/return': typeof CagnottesReturnRoute
   '/membres/$id': typeof MembresIdRoute
+  '/auth': typeof AuthIndexRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRoutesById {
@@ -125,6 +133,7 @@ export interface FileRoutesById {
   '/auth/set-password': typeof AuthSetPasswordRoute
   '/cagnottes/return': typeof CagnottesReturnRoute
   '/membres/$id': typeof MembresIdRoute
+  '/auth/': typeof AuthIndexRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRouteTypes {
@@ -141,6 +150,7 @@ export interface FileRouteTypes {
     | '/auth/set-password'
     | '/cagnottes/return'
     | '/membres/$id'
+    | '/auth/'
     | '/api/public/payments/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -155,6 +165,7 @@ export interface FileRouteTypes {
     | '/auth/set-password'
     | '/cagnottes/return'
     | '/membres/$id'
+    | '/auth'
     | '/api/public/payments/webhook'
   id:
     | '__root__'
@@ -169,6 +180,7 @@ export interface FileRouteTypes {
     | '/auth/set-password'
     | '/cagnottes/return'
     | '/membres/$id'
+    | '/auth/'
     | '/api/public/payments/webhook'
   fileRoutesById: FileRoutesById
 }
@@ -183,6 +195,7 @@ export interface RootRouteChildren {
   RecosRoute: typeof RecosRoute
   AuthSetPasswordRoute: typeof AuthSetPasswordRoute
   MembresIdRoute: typeof MembresIdRoute
+  AuthIndexRoute: typeof AuthIndexRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
 }
 
@@ -244,6 +257,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/': {
+      id: '/auth/'
+      path: '/auth'
+      fullPath: '/auth/'
+      preLoaderRoute: typeof AuthIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/membres/$id': {
       id: '/membres/$id'
       path: '/membres/$id'
@@ -298,6 +318,7 @@ const rootRouteChildren: RootRouteChildren = {
   RecosRoute: RecosRoute,
   AuthSetPasswordRoute: AuthSetPasswordRoute,
   MembresIdRoute: MembresIdRoute,
+  AuthIndexRoute: AuthIndexRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
 }
 export const routeTree = rootRouteImport
