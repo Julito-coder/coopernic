@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RecosRouteImport } from './routes/recos'
 import { Route as MessagesRouteImport } from './routes/messages'
-import { Route as LoginRouteImport } from './routes/login'
 import { Route as EvenementsRouteImport } from './routes/evenements'
 import { Route as ClubRouteImport } from './routes/club'
 import { Route as CagnottesRouteImport } from './routes/cagnottes'
@@ -31,11 +30,6 @@ const RecosRoute = RecosRouteImport.update({
 const MessagesRoute = MessagesRouteImport.update({
   id: '/messages',
   path: '/messages',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EvenementsRoute = EvenementsRouteImport.update({
@@ -97,7 +91,6 @@ export interface FileRoutesByFullPath {
   '/cagnottes': typeof CagnottesRouteWithChildren
   '/club': typeof ClubRoute
   '/evenements': typeof EvenementsRoute
-  '/login': typeof LoginRoute
   '/messages': typeof MessagesRoute
   '/recos': typeof RecosRoute
   '/auth/set-password': typeof AuthSetPasswordRoute
@@ -112,7 +105,6 @@ export interface FileRoutesByTo {
   '/cagnottes': typeof CagnottesRouteWithChildren
   '/club': typeof ClubRoute
   '/evenements': typeof EvenementsRoute
-  '/login': typeof LoginRoute
   '/messages': typeof MessagesRoute
   '/recos': typeof RecosRoute
   '/auth/set-password': typeof AuthSetPasswordRoute
@@ -128,7 +120,6 @@ export interface FileRoutesById {
   '/cagnottes': typeof CagnottesRouteWithChildren
   '/club': typeof ClubRoute
   '/evenements': typeof EvenementsRoute
-  '/login': typeof LoginRoute
   '/messages': typeof MessagesRoute
   '/recos': typeof RecosRoute
   '/auth/set-password': typeof AuthSetPasswordRoute
@@ -145,7 +136,6 @@ export interface FileRouteTypes {
     | '/cagnottes'
     | '/club'
     | '/evenements'
-    | '/login'
     | '/messages'
     | '/recos'
     | '/auth/set-password'
@@ -160,7 +150,6 @@ export interface FileRouteTypes {
     | '/cagnottes'
     | '/club'
     | '/evenements'
-    | '/login'
     | '/messages'
     | '/recos'
     | '/auth/set-password'
@@ -175,7 +164,6 @@ export interface FileRouteTypes {
     | '/cagnottes'
     | '/club'
     | '/evenements'
-    | '/login'
     | '/messages'
     | '/recos'
     | '/auth/set-password'
@@ -191,7 +179,6 @@ export interface RootRouteChildren {
   CagnottesRoute: typeof CagnottesRouteWithChildren
   ClubRoute: typeof ClubRoute
   EvenementsRoute: typeof EvenementsRoute
-  LoginRoute: typeof LoginRoute
   MessagesRoute: typeof MessagesRoute
   RecosRoute: typeof RecosRoute
   AuthSetPasswordRoute: typeof AuthSetPasswordRoute
@@ -213,13 +200,6 @@ declare module '@tanstack/react-router' {
       path: '/messages'
       fullPath: '/messages'
       preLoaderRoute: typeof MessagesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/evenements': {
@@ -314,7 +294,6 @@ const rootRouteChildren: RootRouteChildren = {
   CagnottesRoute: CagnottesRouteWithChildren,
   ClubRoute: ClubRoute,
   EvenementsRoute: EvenementsRoute,
-  LoginRoute: LoginRoute,
   MessagesRoute: MessagesRoute,
   RecosRoute: RecosRoute,
   AuthSetPasswordRoute: AuthSetPasswordRoute,
