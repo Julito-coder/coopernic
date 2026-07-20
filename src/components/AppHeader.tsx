@@ -27,6 +27,7 @@ import {
   Building2,
   Shield,
 } from "lucide-react";
+import { NotificationBell } from "@/components/NotificationBell";
 
 type Role = AppRole;
 
