@@ -150,8 +150,24 @@ function ClubInner({ clubId, isSuper }: { clubId: string; isSuper: boolean }) {
     },
   });
 
+  const rolesQ = useQuery({
+    queryKey: ["club", clubId, "roles"],
+    queryFn: async (): Promise<Record<string, AppRole>> => {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("user_id, role, club_id");
+      const map: Record<string, AppRole> = {};
+      (data ?? []).forEach((r: any) => {
+        if (r.role === "superadmin") map[r.user_id] = "superadmin";
+        else if (r.club_id === clubId && !map[r.user_id]) map[r.user_id] = r.role;
+      });
+      return map;
+    },
+  });
+
   const club = clubQ.data;
   const members = membersQ.data ?? [];
+  const rolesMap = rolesQ.data ?? {};
 
   if (clubQ.isLoading) {
     return (
