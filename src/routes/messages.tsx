@@ -23,7 +23,7 @@ export const Route = createFileRoute("/messages")({
 });
 
 function MessagesPage() {
-  const [activeId, setActiveId] = useState<string>(CONVERSATIONS[0].id);
+  const [activeId, setActiveId] = useState<string>(CONVERSATIONS[0]?.id ?? "");
   const [query, setQuery] = useState("");
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [extraMessages, setExtraMessages] = useState<Record<string, Message[]>>({});
@@ -37,7 +37,8 @@ function MessagesPage() {
     const q = query.trim().toLowerCase();
     if (!q) return CONVERSATIONS;
     return CONVERSATIONS.filter((c) => {
-      const m = getMember(c.memberId)!;
+      const m = getMember(c.memberId);
+      if (!m) return false;
       return (
         `${m.firstName} ${m.lastName}`.toLowerCase().includes(q) ||
         c.lastMessage.toLowerCase().includes(q)
@@ -45,9 +46,10 @@ function MessagesPage() {
     });
   }, [query]);
 
-  const conv = CONVERSATIONS.find((c) => c.id === activeId)!;
-  const member = getMember(conv.memberId)!;
-  const thread = [...(MESSAGE_THREADS[conv.id] ?? []), ...(extraMessages[conv.id] ?? [])];
+  const conv = CONVERSATIONS.find((c) => c.id === activeId);
+  const member = conv ? getMember(conv.memberId) : undefined;
+  const thread = conv ? [...(MESSAGE_THREADS[conv.id] ?? []), ...(extraMessages[conv.id] ?? [])] : [];
+
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -150,6 +152,7 @@ function MessagesPage() {
         </aside>
 
         {/* Conversation */}
+        {conv && member ? (
         <section className="flex min-w-0 flex-col">
           <header className="flex items-center justify-between gap-4 border-b border-border/70 px-6 py-4">
             <div className="flex items-center gap-3">
@@ -258,28 +261,40 @@ function MessagesPage() {
             </p>
           </div>
         </section>
+        ) : (
+          <section className="flex min-w-0 flex-col items-center justify-center p-10 text-center">
+            <div className="font-display text-lg font-bold text-foreground">Aucune conversation</div>
+            <p className="mt-2 max-w-sm text-sm text-ink-muted">
+              Les échanges apparaîtront ici dès que des membres se contacteront.
+            </p>
+          </section>
+        )}
+
       </div>
 
       {/* Reco composer */}
-      <RecoComposer
-        open={recoOpen}
-        onClose={() => setRecoOpen(false)}
-        toMember={member}
-        conversationId={activeId}
-        onSent={(reco) => {
-          pushMessage({
-            attachment: {
-              kind: "reco",
-              recoId: reco.id,
-              prospectName: reco.prospectName,
-              prospectCompany: reco.prospectCompany,
-              description: reco.description,
-              estimatedAmount: reco.estimatedAmount,
-              status: reco.status,
-            },
-          });
-        }}
-      />
+      {member && (
+        <RecoComposer
+          open={recoOpen}
+          onClose={() => setRecoOpen(false)}
+          toMember={member}
+          conversationId={activeId}
+          onSent={(reco) => {
+            pushMessage({
+              attachment: {
+                kind: "reco",
+                recoId: reco.id,
+                prospectName: reco.prospectName,
+                prospectCompany: reco.prospectCompany,
+                description: reco.description,
+                estimatedAmount: reco.estimatedAmount,
+                status: reco.status,
+              },
+            });
+          }}
+        />
+      )}
+
 
       {/* Contact picker modal */}
       {contactPickerOpen && (

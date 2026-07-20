@@ -72,26 +72,27 @@ function StatsPage() {
       </div>
 
       {/* Leaderboard */}
-      <div className="mt-10 rounded-3xl border border-border bg-gradient-to-br from-primary to-[oklch(0.3_0.08_265)] p-6 text-primary-foreground shadow-elevated">
-        <div className="text-xs font-bold uppercase tracking-[0.2em] text-white/60">Top contributeurs</div>
-        <h3 className="mt-2 font-display text-xl font-bold">Leaderboard club</h3>
-        <ol className="mt-5 grid gap-2.5 md:grid-cols-2 lg:grid-cols-5">
-          {stats.leaderboard.map((row, i) => (
-            <li key={row.member.id} className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 p-3 backdrop-blur">
-              <span className="font-display text-lg font-black text-accent">#{i + 1}</span>
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-semibold">
-                  {row.member.firstName} {row.member.lastName}
+      {stats.leaderboard.length > 0 && (
+        <div className="mt-10 rounded-3xl border border-border bg-gradient-to-br from-primary to-[oklch(0.3_0.08_265)] p-6 text-primary-foreground shadow-elevated">
+          <div className="text-xs font-bold uppercase tracking-[0.2em] text-white/60">Top contributeurs</div>
+          <h3 className="mt-2 font-display text-xl font-bold">Leaderboard club</h3>
+          <ol className="mt-5 grid gap-2.5 md:grid-cols-2 lg:grid-cols-5">
+            {stats.leaderboard.map((row, i) => (
+              <li key={row.memberId} className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 p-3 backdrop-blur">
+                <span className="font-display text-lg font-black text-accent">#{i + 1}</span>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-semibold">{row.memberId}</div>
+                  <div className="text-[11px] text-white/60">
+                    {row.sent} reco{row.sent > 1 ? "s" : ""} · {row.won} deal{row.won > 1 ? "s" : ""}
+                  </div>
                 </div>
-                <div className="text-[11px] text-white/60">
-                  {row.sent} reco{row.sent > 1 ? "s" : ""} · {row.won} deal{row.won > 1 ? "s" : ""}
-                </div>
-              </div>
-              <div className="font-mono text-xs font-bold text-accent">{fmtEuro(row.ca)}</div>
-            </li>
-          ))}
-        </ol>
-      </div>
+                <div className="font-mono text-xs font-bold text-accent">{fmtEuro(row.ca)}</div>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+
     </div>
   );
 }
