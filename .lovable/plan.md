@@ -1,81 +1,67 @@
-## Direction
+## Objectif
 
-Mode **clair, éditorial, aéré**. Fond `#FFFFFF` par défaut, crème `#F3EFE6` réservé aux surfaces qui doivent respirer (cartes hero, encadrés, banners), navy `#0b1428` uniquement pour le texte et les CTA principaux, or `#D4A24C` en accent chirurgical (liens actifs, KPIs clés, badges premium — jamais en aplat de fond large).
+Clarifier la séparation des rôles : le **Super Admin** est un back-office global (tous les clubs), le **Gestionnaire** ne pilote que son club. Le Super Admin doit pouvoir faire tout ce qu'un gestionnaire fait, mais partout, plus la gestion des rôles.
 
-Mobile-first : chaque écran est pensé colonne unique, sections empilées pleine largeur, respiration verticale généreuse (densité 2/5). Le desktop est une conséquence, pas la référence.
+## État actuel
 
-## 1 · Design tokens (fondation)
+- `/admin` (Super Admin) : liste des clubs, création, choix du gestionnaire via un dropdown. Pas d'accès direct aux membres, cagnottes, invitations.
+- `/club` (Gestionnaire) : ajoute/retire membres, invite par email, cagnottes, toggle annuaire. Fonctionne aussi pour un Super Admin via `?id=xxx`.
+- Rôles en base : `superadmin`, `gestionnaire`, `membre` (table `user_roles`, RLS OK, helper `has_role`).
+- `inviteMember` autorise déjà Super Admin OU gestionnaire du club cible.
 
-Réécriture de `src/styles.css` :
+## Ce qu'il manque
 
-- `--background: #FFFFFF`, `--foreground: #0b1428`
-- `--surface: #F3EFE6` (crème), `--surface-strong: #FAF8F2`
-- `--border: #E8E4D9` (bord chaud très doux, pas de gris froid)
-- `--muted: #F7F5EF`, `--muted-foreground: #5B6070`
-- `--primary: #0b1428` / `--primary-foreground: #FFFFFF`
-- `--accent: #D4A24C` / `--accent-foreground: #0b1428`
-- `--ring: color-mix(in oklab, #D4A24C 60%, transparent)`
-- `--radius: 14px` (rayons plus doux qu'aujourd'hui, cohérents partout)
-- Nouvelles ombres légères basées sur navy à 6-8% d'opacité (pas de noir pur)
-- Suppression des variantes dark hors-charte (on garde `.dark` mais on ne l'active plus par défaut)
+1. Le Super Admin n'a pas d'UI pour **promouvoir/rétrograder** un membre existant en gestionnaire ou super admin, ni pour **révoquer un rôle**.
+2. Pas de bouton "renvoyer les codes d'accès" (renvoi d'email d'invitation / reset password) depuis l'admin.
+3. `/admin` ne donne pas d'accès rapide à la vue gestionnaire de chaque club (le lien "Gérer →" existe, à mettre en avant).
+4. Aucun garde-fou côté serveur pour l'écriture des rôles (aujourd'hui seul le Super Admin devrait pouvoir modifier `user_roles`).
 
-Typo Manrope conservée. Échelle typographique retouchée : titres plus fins (`font-weight: 700` max, plus `800` réservé au logo), body `text-[15px] leading-relaxed` sur mobile.
+## Plan
 
-## 2 · Header & navigation mobile
+### 1. Server functions rôles & invitations (`src/lib/members.functions.ts`)
 
-`src/components/AppHeader.tsx` :
+Ajouter trois server functions protégées par `requireSupabaseAuth`, réservées au super admin (check via `has_role`) :
 
-- Sur mobile, la nav horizontale disparaît → **bottom tab bar** fixe (5 items max : Accueil, Annuaire, Messages, Cagnottes, Évènements) avec icônes Lucide, label court, actif = navy + or dessous.
-- Overflow ("Stats", "Mon club", "Super admin") dans un menu "Plus" (drawer).
-- Le header top reste minimal : logo à gauche, avatar rôle à droite, plus de dropdown "démo" visible par défaut sur mobile (déplacé dans le menu profil).
-- Desktop : nav horizontale conservée mais allégée (spacing +, poids typographique réduit).
+- `setMemberRole({ userId, clubId, role })` — upsert dans `user_roles`. Roles autorisés : `membre`, `gestionnaire`, `superadmin`. Si `gestionnaire`, met aussi à jour `clubs.gestionnaire_id`.
+- `revokeMemberRole({ userId, clubId, role })` — supprime la ligne correspondante.
+- `resendInvite({ email, redirectTo })` — renvoie un email de reset password (réutilise la logique déjà présente dans `inviteMember`).
 
-## 3 · Landing publique (`src/routes/index.tsx`)
+Aucune migration SQL n'est nécessaire (RLS déjà stricte, on passe par `supabaseAdmin` côté serveur après vérification super admin).
 
-Refonte en **sections pleines empilées** :
+### 2. Refonte `src/routes/admin.tsx`
 
-```text
-[hero]        titre éditorial navy, sous-titre muted, 1 CTA or, mockup mobile à droite (desktop) ou dessous (mobile)
-[preuve]      bandeau crème avec 3-4 chiffres clés (or pour les nombres, navy pour les labels)
-[valeur x3]   3 sections pleines alternées blanc/crème, chaque section = un pilier (Réseau, Business tracking, Gestion club) avec 1 visuel + 1 paragraphe court
-[cible]       "Pour les fondateurs de clubs business" — carte crème, ton direct
-[cta final]   bande navy pleine largeur (seule zone sombre de la page), CTA or contrasté
-[footer]      minimal, liens légaux
-```
+Transformer la page en vrai back-office :
 
-Retrait du hero glow/mesh actuel : trop chargé et hors-registre light. Remplacé par une composition typographique + un accent or ponctuel (filet, chiffre, badge).
+- KPIs conservés.
+- Formulaire "Créer un club" conservé.
+- Pour chaque club : carte dépliable listant **tous les membres** avec, par ligne :
+  - badge rôle actuel (membre / gestionnaire / superadmin),
+  - menu "Changer rôle" (membre, gestionnaire, superadmin),
+  - bouton "Renvoyer accès" (appelle `resendInvite`),
+  - bouton "Retirer du club".
+- Lien "Ouvrir l'espace club" (réutilise `/club?id=…`) pour piloter cagnottes, invitations, annuaire — le Super Admin y a déjà accès.
+- Pas de switcher démo, tout est piloté par la vraie session.
 
-## 4 · Écrans connectés
+### 3. Ajustements `src/routes/club.tsx`
 
-Même grammaire partout : titre de page (H1 navy), sous-titre muted, contenu en cartes blanches sur fond blanc avec bord `--border` et rayon 14px. Le crème sert de séparateur de sections, pas de fond général.
+- Rien à changer sur le fond (le Super Admin peut déjà y entrer via `?id=`).
+- Retirer le bouton "définir comme gestionnaire" côté gestionnaire (déjà réservé au super admin via `canEditGestionnaire`).
+- Ajouter un bouton "Renvoyer les accès" à côté de chaque membre (utilise `resendInvite`) — utile aussi au gestionnaire pour son club.
 
-- **Annuaire** (`src/routes/annuaire.tsx`, `MemberCard.tsx`) : filtres en haut sticky mobile, cartes membres simplifiées (photo/initiales, nom, société, tags), badge or "Réseau Coopernic" pour les membres externes.
-- **Messages** (`src/routes/messages.tsx`) : liste conversations pleine largeur mobile, thread en push-view. Bulles : sortantes = navy/blanc, entrantes = crème/navy. Bouton "Reco" à côté du champ, en accent or.
-- **Stats** (`src/routes/recos.tsx`) : KPIs en cartes empilées mobile (2 colonnes desktop), tableaux transformés en listes-cartes sur mobile.
-- **Cagnottes** (`src/routes/cagnottes.tsx`) : card cagnotte avec barre de progression or, KPIs alignés verticalement mobile.
-- **Évènements** (`src/routes/evenements.tsx`) : card évènement, sondage inline avec barres de progression navy/or, bouton "Ouvrir dans Maps" texte or.
-- **Mon club / Admin** (`src/routes/club.tsx`, `src/routes/admin.tsx`) : tables → listes-cartes mobile, actions primaires en bas d'écran sticky (pattern iOS-like).
-- **Auth** (`login`, `auth/set-password`) : carte centrée max-w-sm sur fond crème.
+### 4. Header / navigation
 
-## 5 · Composants transverses
+- Un gestionnaire ne voit que "Mon club" (déjà le cas).
+- Le Super Admin voit "Admin" + "Mon club" (déjà OK).
+- Aucun changement structurel.
 
-- Boutons : primaire navy plein, secondaire ghost navy avec bord, accent or réservé au CTA principal d'une page.
-- Inputs : bord `--border`, focus ring or, hauteur 44px mini (tap target mobile).
-- Bandeaux (test mode Stripe, invitation) : fond crème + filet or à gauche, plus jamais rouge/orange criard sauf erreur bloquante.
+## Détails techniques
 
-## Fichiers modifiés
+- Les server functions utilisent `context.supabase` pour valider que l'appelant est super admin (`has_role`), puis chargent dynamiquement `supabaseAdmin` pour écrire dans `user_roles` / renvoyer les emails.
+- Le renvoi d'accès utilise `supabaseAdmin.auth.resetPasswordForEmail` (déjà utilisé dans `inviteMember`).
+- Aucune donnée simulée ne revient : tout passe par Supabase.
 
-- `src/styles.css` — refonte complète des tokens
-- `src/components/AppHeader.tsx` — bottom tab bar mobile + header allégé
-- **Nouveau** `src/components/MobileTabBar.tsx`
-- `src/routes/index.tsx` — refonte landing
-- `src/routes/__root.tsx` — meta + link Manrope inchangés, padding bottom pour tab bar
-- Retouches ciblées : `annuaire.tsx`, `messages.tsx`, `recos.tsx`, `cagnottes.tsx`, `evenements.tsx`, `club.tsx`, `admin.tsx`, `login.tsx`, `MemberCard.tsx`, `RecoComposer.tsx`, `PaymentTestModeBanner.tsx`, `ClubPotsSection.tsx`, `PotEmbeddedCheckout.tsx`
+## Hors scope
 
-Aucun changement de logique business, de schéma DB, ni de server function — c'est un pass presentation/UX pur.
-
-## Hors-scope
-
-- Pas de mode dark (mis en veille, tokens conservés mais non exposés).
-- Pas de nouveau logo ni de nouvelles illustrations générées ce tour-ci — on peut en ajouter après validation de la direction.
-- Pas de refonte du checkout Stripe embarqué (contraint par Stripe).
+- Pas de nouvelle table, pas de migration.
+- Pas de refonte visuelle : on reste sur la charte light actuelle.
+- Pas de modification des cagnottes / events.
