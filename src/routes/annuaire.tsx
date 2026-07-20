@@ -241,7 +241,7 @@ function MapView({ members }: { members: Member[] }) {
   return (
     <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_360px]">
       <div className="relative overflow-hidden rounded-3xl border border-border bg-primary p-6 shadow-elevated">
-        <div className="absolute inset-0 bg-mesh opacity-30" />
+        <div className="absolute inset-0" />
         <div className="relative aspect-[4/5] w-full md:aspect-[5/4]">
           <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full">
             <path
