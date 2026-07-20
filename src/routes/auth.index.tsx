@@ -29,14 +29,27 @@ function AuthPage() {
   async function handleLogin(e: FormEvent) {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
+    const { data: signIn, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
+      setLoading(false);
       toast.error(error.message);
       return;
     }
+    // Redirection selon le rôle
+    let target = "/";
+    const uid = signIn.user?.id;
+    if (uid) {
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role, club_id")
+        .eq("user_id", uid);
+      const list = roles ?? [];
+      if (list.some((r) => r.role === "superadmin")) target = "/admin";
+      else if (list.some((r) => r.role === "gestionnaire")) target = "/club";
+    }
+    setLoading(false);
     toast.success("Connecté");
-    navigate({ to: "/" });
+    navigate({ to: target });
   }
 
   async function handleReset(e: FormEvent) {

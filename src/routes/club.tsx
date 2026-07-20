@@ -9,6 +9,7 @@ import {
   inviteMember,
   resendInvite,
   removeMemberFromClub,
+  setMemberRole,
 } from "@/lib/members.functions";
 import { SECTORS, CITIES } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
@@ -149,8 +150,24 @@ function ClubInner({ clubId, isSuper }: { clubId: string; isSuper: boolean }) {
     },
   });
 
+  const rolesQ = useQuery({
+    queryKey: ["club", clubId, "roles"],
+    queryFn: async (): Promise<Record<string, AppRole>> => {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("user_id, role, club_id");
+      const map: Record<string, AppRole> = {};
+      (data ?? []).forEach((r: any) => {
+        if (r.role === "superadmin") map[r.user_id] = "superadmin";
+        else if (r.club_id === clubId && !map[r.user_id]) map[r.user_id] = r.role;
+      });
+      return map;
+    },
+  });
+
   const club = clubQ.data;
   const members = membersQ.data ?? [];
+  const rolesMap = rolesQ.data ?? {};
 
   if (clubQ.isLoading) {
     return (
@@ -244,6 +261,7 @@ function ClubInner({ clubId, isSuper }: { clubId: string; isSuper: boolean }) {
                 <th className="px-4 py-3 text-left font-semibold">Membre</th>
                 <th className="px-4 py-3 text-left font-semibold">Société</th>
                 <th className="px-4 py-3 text-left font-semibold">Email</th>
+                <th className="px-4 py-3 text-left font-semibold">Rôle</th>
                 <th className="px-4 py-3 text-right font-semibold">Actions</th>
               </tr>
             </thead>
@@ -254,12 +272,14 @@ function ClubInner({ clubId, isSuper }: { clubId: string; isSuper: boolean }) {
                   member={m}
                   clubId={club.id}
                   isGest={m.id === club.gestionnaire_id}
+                  currentRole={rolesMap[m.id] ?? "membre"}
+                  isSuper={isSuper}
                 />
               ))}
               {members.length === 0 && (
                 <tr>
                   <td
-                    colSpan={4}
+                    colSpan={5}
                     className="px-4 py-8 text-center text-muted-foreground"
                   >
                     Aucun membre. Invite le premier ci-dessus.
@@ -287,14 +307,19 @@ function MemberRowUI({
   member,
   clubId,
   isGest,
+  currentRole,
+  isSuper,
 }: {
   member: MemberRow;
   clubId: string;
   isGest: boolean;
+  currentRole: AppRole;
+  isSuper: boolean;
 }) {
   const qc = useQueryClient();
   const resend = useServerFn(resendInvite);
   const remove = useServerFn(removeMemberFromClub);
+  const changeRole = useServerFn(setMemberRole);
   const [busy, setBusy] = useState(false);
 
   async function doResend() {
@@ -329,6 +354,27 @@ function MemberRowUI({
     }
   }
 
+  async function doChangeRole(next: AppRole) {
+    if (next === currentRole) return;
+    if (next === "superadmin" && !isSuper) return;
+    setBusy(true);
+    try {
+      await changeRole({
+        data: {
+          userId: member.id,
+          clubId: next === "superadmin" ? null : clubId,
+          role: next,
+        },
+      });
+      toast.success("Rôle mis à jour.");
+      qc.invalidateQueries({ queryKey: ["club", clubId] });
+    } catch (e: any) {
+      toast.error(e.message ?? "Erreur");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <tr className="border-t border-border/60">
       <td className="px-4 py-3">
@@ -346,6 +392,22 @@ function MemberRowUI({
       </td>
       <td className="px-4 py-3">{member.company ?? "—"}</td>
       <td className="px-4 py-3 text-muted-foreground">{member.email}</td>
+      <td className="px-4 py-3">
+        <Select
+          value={currentRole}
+          onValueChange={(v) => doChangeRole(v as AppRole)}
+          disabled={busy || (currentRole === "superadmin" && !isSuper)}
+        >
+          <SelectTrigger className="h-9 w-[160px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="membre">Membre</SelectItem>
+            <SelectItem value="gestionnaire">Gestionnaire</SelectItem>
+            {isSuper && <SelectItem value="superadmin">Super admin</SelectItem>}
+          </SelectContent>
+        </Select>
+      </td>
       <td className="px-4 py-3 text-right">
         <div className="flex items-center justify-end gap-1">
           <Button
