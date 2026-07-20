@@ -9,6 +9,7 @@ import {
   inviteMember,
   resendInvite,
   removeMemberFromClub,
+  setMemberRole,
 } from "@/lib/members.functions";
 import { SECTORS, CITIES } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
