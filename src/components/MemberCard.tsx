@@ -29,7 +29,7 @@ export function MemberCard({
         </span>
       )}
       <div className="flex items-start gap-4">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent font-display text-base font-bold text-primary-foreground">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary font-display text-base font-bold text-primary-foreground">
           {member.initials}
         </div>
         <div className="min-w-0 flex-1">

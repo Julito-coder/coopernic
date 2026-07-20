@@ -127,7 +127,7 @@ function MessagesPage() {
                         : "border-transparent hover:bg-secondary/40")
                     }
                   >
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-sm font-bold text-primary-foreground">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
                       {m.initials}
                     </div>
                     <div className="min-w-0 flex-1">
@@ -156,7 +156,7 @@ function MessagesPage() {
         <section className="flex min-w-0 flex-col">
           <header className="flex items-center justify-between gap-4 border-b border-border/70 px-6 py-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-sm font-bold text-primary-foreground">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
                 {member.initials}
               </div>
               <div>
@@ -383,7 +383,7 @@ function ContactCard({ memberId, mine }: { memberId: string; mine: boolean }) {
         (mine ? "border-accent-foreground/15 hover:bg-accent-foreground/5" : "border-border/60 hover:bg-secondary/50")
       }
     >
-      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-sm font-bold text-primary-foreground">
+      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
         {m.initials}
       </div>
       <div className="min-w-0 flex-1">
@@ -480,7 +480,7 @@ function ContactPicker({
                 onClick={() => onPick(m.id)}
                 className="flex w-full items-center gap-3 px-5 py-3 text-left transition-colors hover:bg-secondary"
               >
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-xs font-bold text-primary-foreground">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
                   {m.initials}
                 </div>
                 <div className="min-w-0 flex-1">

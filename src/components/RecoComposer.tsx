@@ -48,7 +48,7 @@ export function RecoComposer({ toMember, conversationId, open, onClose, onSent }
         onSubmit={submit}
         className="w-full max-w-lg overflow-hidden rounded-2xl border border-border bg-surface shadow-elevated"
       >
-        <header className="flex items-start justify-between gap-4 border-b border-border/70 bg-gradient-to-br from-primary to-[oklch(0.3_0.08_265)] px-6 py-5 text-primary-foreground">
+        <header className="flex items-start justify-between gap-4 border-b border-border/70 bg-primary px-6 py-5 text-primary-foreground">
           <div>
             <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-accent">
               Nouvelle recommandation

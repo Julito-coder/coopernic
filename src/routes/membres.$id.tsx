@@ -35,11 +35,12 @@ function MemberPage() {
 
       {/* Header */}
       <div className="mt-6 overflow-hidden rounded-3xl border border-border bg-surface shadow-card">
-        <div className="relative h-40 bg-primary bg-mesh" />
-        <div className="px-8 pb-8">
+        <div className="relative h-40 bg-primary" />
+        <div className="mx-auto max-w-4xl px-6">
           <div className="flex flex-wrap items-end justify-between gap-4">
-            <div className="flex items-end gap-5">
-              <div className="-mt-12 flex h-24 w-24 items-center justify-center rounded-2xl border-4 border-surface bg-gradient-to-br from-primary to-accent font-display text-3xl font-black text-primary-foreground shadow-elevated">
+            <div className="flex items-end gap-4">
+              <div className="-mt-12 flex h-24 w-24 items-center justify-center rounded-2xl border-4 border-surface bg-primary font-display text-3xl font-black text-primary-foreground shadow-elevated">
+
                 {member.initials}
               </div>
               <div className="pb-1">
