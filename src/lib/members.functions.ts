@@ -181,7 +181,7 @@ export const inviteMember = createServerFn({ method: "POST" })
 const ResendSchema = z.object({
   email: z.string().email().max(255),
   memberClubId: z.string().uuid().nullable().optional(),
-  redirectTo: z.string().url(),
+  redirectTo: z.string().url().optional(),
 });
 
 export const resendInvite = createServerFn({ method: "POST" })
@@ -199,7 +199,7 @@ export const resendInvite = createServerFn({ method: "POST" })
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.auth.resetPasswordForEmail(data.email, {
-      redirectTo: data.redirectTo,
+      redirectTo: INVITE_REDIRECT_URL,
     });
     if (error) throw new Error(error.message);
     return { ok: true };
