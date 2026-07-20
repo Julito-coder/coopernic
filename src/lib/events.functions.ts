@@ -118,8 +118,38 @@ export const createEvent = createServerFn({ method: "POST" })
       .select()
       .single();
     if (error) throw new Error(error.message);
+
+    // Immediately notify club members of the new event (admin bypasses RLS to insert for others)
+    try {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: mem } = await supabaseAdmin
+        .from("members")
+        .select("id")
+        .eq("club_id", data.clubId);
+      const rows = (mem ?? []).map((m) => ({
+        user_id: m.id,
+        club_id: data.clubId,
+        event_id: ev.id,
+        type: "new_event",
+        title: `Nouvel évènement : ${data.title}`,
+        body: new Date(data.startsAt).toLocaleString("fr-FR", {
+          weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
+        }) + (data.locationName ? ` · ${data.locationName}` : ""),
+        link: "/evenements",
+      }));
+      if (rows.length) await supabaseAdmin.from("notifications").insert(rows);
+      await supabaseAdmin
+        .from("events")
+        .update({ notified_new_at: new Date().toISOString() })
+        .eq("id", ev.id);
+    } catch (e) {
+      console.error("[events] failed to dispatch new_event notifications", e);
+    }
+
     return { event: ev };
   });
+
+
 
 export const deleteEvent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
