@@ -261,6 +261,7 @@ function ClubInner({ clubId, isSuper }: { clubId: string; isSuper: boolean }) {
                 <th className="px-4 py-3 text-left font-semibold">Membre</th>
                 <th className="px-4 py-3 text-left font-semibold">Société</th>
                 <th className="px-4 py-3 text-left font-semibold">Email</th>
+                <th className="px-4 py-3 text-left font-semibold">Rôle</th>
                 <th className="px-4 py-3 text-right font-semibold">Actions</th>
               </tr>
             </thead>
@@ -271,12 +272,14 @@ function ClubInner({ clubId, isSuper }: { clubId: string; isSuper: boolean }) {
                   member={m}
                   clubId={club.id}
                   isGest={m.id === club.gestionnaire_id}
+                  currentRole={rolesMap[m.id] ?? "membre"}
+                  isSuper={isSuper}
                 />
               ))}
               {members.length === 0 && (
                 <tr>
                   <td
-                    colSpan={4}
+                    colSpan={5}
                     className="px-4 py-8 text-center text-muted-foreground"
                   >
                     Aucun membre. Invite le premier ci-dessus.
