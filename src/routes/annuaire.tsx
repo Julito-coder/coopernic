@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { SECTORS, CITIES, type Member } from "@/lib/mock-data";
 import { MemberCard } from "@/components/MemberCard";
 import {
@@ -72,7 +72,10 @@ function AnnuaireePage() {
 
   const reset = () => { setQuery(""); setSector(""); setCity(""); };
   const hasFilters = query || sector || city;
-  const openClubsCount = listClubs().filter((c) => c.openToNetwork).length;
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const openClubsCount = mounted ? listClubs().filter((c) => c.openToNetwork).length : 0;
+
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-12">
