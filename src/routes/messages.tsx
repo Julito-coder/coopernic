@@ -381,6 +381,7 @@ function MessagesPage() {
             id: member.id,
             firstName: member.firstName,
             lastName: member.lastName,
+            role: member.role,
             company: member.company,
           } as any}
           conversationId={activeId}
