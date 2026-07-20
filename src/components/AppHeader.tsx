@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import logoMark from "@/assets/coopernic-mark.png";
-import { useAuth, loginAs, allMembers, type Role } from "@/lib/auth-store";
+import { useAuth, type Role } from "@/lib/auth-store";
 import { useSession, signOut } from "@/lib/use-session";
 import {
   DropdownMenu,
@@ -9,9 +9,6 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -31,6 +28,7 @@ import {
   Building2,
   Shield,
 } from "lucide-react";
+
 
 type NavItem = {
   to: string;
