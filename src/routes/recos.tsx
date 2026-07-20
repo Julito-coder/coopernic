@@ -73,7 +73,7 @@ function StatsPage() {
 
       {/* Leaderboard */}
       {stats.leaderboard.length > 0 && (
-        <div className="mt-10 rounded-3xl border border-border bg-gradient-to-br from-primary to-[oklch(0.3_0.08_265)] p-6 text-primary-foreground shadow-elevated">
+        <div className="mt-10 rounded-3xl border border-border bg-primary p-6 text-primary-foreground shadow-elevated">
           <div className="text-xs font-bold uppercase tracking-[0.2em] text-white/60">Top contributeurs</div>
           <h3 className="mt-2 font-display text-xl font-bold">Leaderboard club</h3>
           <ol className="mt-5 grid gap-2.5 md:grid-cols-2 lg:grid-cols-5">
