@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as RecosRouteImport } from './routes/recos'
 import { Route as MessagesRouteImport } from './routes/messages'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as EvenementsRouteImport } from './routes/evenements'
 import { Route as ClubRouteImport } from './routes/club'
 import { Route as CagnottesRouteImport } from './routes/cagnottes'
 import { Route as AnnuaireRouteImport } from './routes/annuaire'
@@ -35,6 +36,11 @@ const MessagesRoute = MessagesRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EvenementsRoute = EvenementsRouteImport.update({
+  id: '/evenements',
+  path: '/evenements',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ClubRoute = ClubRouteImport.update({
@@ -90,6 +96,7 @@ export interface FileRoutesByFullPath {
   '/annuaire': typeof AnnuaireRoute
   '/cagnottes': typeof CagnottesRouteWithChildren
   '/club': typeof ClubRoute
+  '/evenements': typeof EvenementsRoute
   '/login': typeof LoginRoute
   '/messages': typeof MessagesRoute
   '/recos': typeof RecosRoute
@@ -104,6 +111,7 @@ export interface FileRoutesByTo {
   '/annuaire': typeof AnnuaireRoute
   '/cagnottes': typeof CagnottesRouteWithChildren
   '/club': typeof ClubRoute
+  '/evenements': typeof EvenementsRoute
   '/login': typeof LoginRoute
   '/messages': typeof MessagesRoute
   '/recos': typeof RecosRoute
@@ -119,6 +127,7 @@ export interface FileRoutesById {
   '/annuaire': typeof AnnuaireRoute
   '/cagnottes': typeof CagnottesRouteWithChildren
   '/club': typeof ClubRoute
+  '/evenements': typeof EvenementsRoute
   '/login': typeof LoginRoute
   '/messages': typeof MessagesRoute
   '/recos': typeof RecosRoute
@@ -135,6 +144,7 @@ export interface FileRouteTypes {
     | '/annuaire'
     | '/cagnottes'
     | '/club'
+    | '/evenements'
     | '/login'
     | '/messages'
     | '/recos'
@@ -149,6 +159,7 @@ export interface FileRouteTypes {
     | '/annuaire'
     | '/cagnottes'
     | '/club'
+    | '/evenements'
     | '/login'
     | '/messages'
     | '/recos'
@@ -163,6 +174,7 @@ export interface FileRouteTypes {
     | '/annuaire'
     | '/cagnottes'
     | '/club'
+    | '/evenements'
     | '/login'
     | '/messages'
     | '/recos'
@@ -178,6 +190,7 @@ export interface RootRouteChildren {
   AnnuaireRoute: typeof AnnuaireRoute
   CagnottesRoute: typeof CagnottesRouteWithChildren
   ClubRoute: typeof ClubRoute
+  EvenementsRoute: typeof EvenementsRoute
   LoginRoute: typeof LoginRoute
   MessagesRoute: typeof MessagesRoute
   RecosRoute: typeof RecosRoute
@@ -207,6 +220,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/evenements': {
+      id: '/evenements'
+      path: '/evenements'
+      fullPath: '/evenements'
+      preLoaderRoute: typeof EvenementsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/club': {
@@ -293,6 +313,7 @@ const rootRouteChildren: RootRouteChildren = {
   AnnuaireRoute: AnnuaireRoute,
   CagnottesRoute: CagnottesRouteWithChildren,
   ClubRoute: ClubRoute,
+  EvenementsRoute: EvenementsRoute,
   LoginRoute: LoginRoute,
   MessagesRoute: MessagesRoute,
   RecosRoute: RecosRoute,
