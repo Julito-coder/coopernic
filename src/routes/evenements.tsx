@@ -84,14 +84,12 @@ function EventsPage() {
               Sondages de présence, infos pratiques & paiements.
             </p>
           </div>
-          {isManager && (
-            <button
-              onClick={() => setShowCreate(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90"
-            >
-              <Plus className="h-4 w-4" /> Nouvel évènement
-            </button>
-          )}
+          <button
+            onClick={() => setShowCreate(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90"
+          >
+            <Plus className="h-4 w-4" /> Nouvel évènement
+          </button>
         </div>
 
         {isSuperadmin && clubs.length > 0 && (
