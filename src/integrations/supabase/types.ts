@@ -89,11 +89,13 @@ export type Database = {
           location_lat: number | null
           location_lng: number | null
           location_name: string | null
+          notified_new_at: string | null
           poll_options: Json
           poll_question: string | null
           poll_results_visible: boolean
           practical_info: string | null
           price_cents: number | null
+          reminder_sent_at: string | null
           starts_at: string
           status: string
           title: string
@@ -111,11 +113,13 @@ export type Database = {
           location_lat?: number | null
           location_lng?: number | null
           location_name?: string | null
+          notified_new_at?: string | null
           poll_options?: Json
           poll_question?: string | null
           poll_results_visible?: boolean
           practical_info?: string | null
           price_cents?: number | null
+          reminder_sent_at?: string | null
           starts_at: string
           status?: string
           title: string
@@ -133,11 +137,13 @@ export type Database = {
           location_lat?: number | null
           location_lng?: number | null
           location_name?: string | null
+          notified_new_at?: string | null
           poll_options?: Json
           poll_question?: string | null
           poll_results_visible?: boolean
           practical_info?: string | null
           price_cents?: number | null
+          reminder_sent_at?: string | null
           starts_at?: string
           status?: string
           title?: string
@@ -220,6 +226,60 @@ export type Database = {
             columns: ["club_id"]
             isOneToOne: false
             referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          body: string | null
+          club_id: string | null
+          created_at: string
+          event_id: string | null
+          id: string
+          link: string | null
+          read_at: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          club_id?: string | null
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          link?: string | null
+          read_at?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          club_id?: string | null
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          link?: string | null
+          read_at?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
             referencedColumns: ["id"]
           },
         ]
@@ -388,6 +448,7 @@ export type Database = {
     }
     Functions: {
       current_user_club_id: { Args: never; Returns: string }
+      dispatch_event_notifications: { Args: never; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

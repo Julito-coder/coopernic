@@ -27,6 +27,7 @@ import {
   Building2,
   Shield,
 } from "lucide-react";
+import { NotificationBell } from "@/components/NotificationBell";
 
 type Role = AppRole;
 
@@ -116,12 +117,16 @@ export function AppHeader() {
             ))}
           </nav>
 
-          <ProfileMenu
-            effectiveRole={effectiveRole}
-            effectiveDisplayName={effectiveDisplayName}
-            RoleIcon={RoleIcon}
-            realUserEmail={real.user?.email ?? null}
-          />
+          <div className="flex items-center gap-2">
+            {signedIn && <NotificationBell />}
+            <ProfileMenu
+              effectiveRole={effectiveRole}
+              effectiveDisplayName={effectiveDisplayName}
+              RoleIcon={RoleIcon}
+              realUserEmail={real.user?.email ?? null}
+            />
+          </div>
+
 
         </div>
       </header>
