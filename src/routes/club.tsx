@@ -307,14 +307,19 @@ function MemberRowUI({
   member,
   clubId,
   isGest,
+  currentRole,
+  isSuper,
 }: {
   member: MemberRow;
   clubId: string;
   isGest: boolean;
+  currentRole: AppRole;
+  isSuper: boolean;
 }) {
   const qc = useQueryClient();
   const resend = useServerFn(resendInvite);
   const remove = useServerFn(removeMemberFromClub);
+  const changeRole = useServerFn(setMemberRole);
   const [busy, setBusy] = useState(false);
 
   async function doResend() {
@@ -349,6 +354,27 @@ function MemberRowUI({
     }
   }
 
+  async function doChangeRole(next: AppRole) {
+    if (next === currentRole) return;
+    if (next === "superadmin" && !isSuper) return;
+    setBusy(true);
+    try {
+      await changeRole({
+        data: {
+          userId: member.id,
+          clubId: next === "superadmin" ? null : clubId,
+          role: next,
+        },
+      });
+      toast.success("Rôle mis à jour.");
+      qc.invalidateQueries({ queryKey: ["club", clubId] });
+    } catch (e: any) {
+      toast.error(e.message ?? "Erreur");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <tr className="border-t border-border/60">
       <td className="px-4 py-3">
@@ -366,6 +392,22 @@ function MemberRowUI({
       </td>
       <td className="px-4 py-3">{member.company ?? "—"}</td>
       <td className="px-4 py-3 text-muted-foreground">{member.email}</td>
+      <td className="px-4 py-3">
+        <Select
+          value={currentRole}
+          onValueChange={(v) => doChangeRole(v as AppRole)}
+          disabled={busy || (currentRole === "superadmin" && !isSuper)}
+        >
+          <SelectTrigger className="h-9 w-[160px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="membre">Membre</SelectItem>
+            <SelectItem value="gestionnaire">Gestionnaire</SelectItem>
+            {isSuper && <SelectItem value="superadmin">Super admin</SelectItem>}
+          </SelectContent>
+        </Select>
+      </td>
       <td className="px-4 py-3 text-right">
         <div className="flex items-center justify-end gap-1">
           <Button
