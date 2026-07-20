@@ -157,6 +157,11 @@
   .text-balance { text-wrap: balance; }
   .bg-cream { background-color: var(--surface); }
   .bg-cream-soft { background-color: var(--surface-elevated); }
+  .bg-mesh {
+    background-image:
+      radial-gradient(at 20% 10%, oklch(0.75 0.11 78 / 0.12) 0px, transparent 55%),
+      radial-gradient(at 80% 90%, oklch(0.75 0.11 78 / 0.10) 0px, transparent 55%);
+  }
   .ring-focus {
     outline: 2px solid transparent;
     outline-offset: 2px;
