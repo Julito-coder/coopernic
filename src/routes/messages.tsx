@@ -152,6 +152,7 @@ function MessagesPage() {
         </aside>
 
         {/* Conversation */}
+        {conv && member ? (
         <section className="flex min-w-0 flex-col">
           <header className="flex items-center justify-between gap-4 border-b border-border/70 px-6 py-4">
             <div className="flex items-center gap-3">
@@ -260,6 +261,15 @@ function MessagesPage() {
             </p>
           </div>
         </section>
+        ) : (
+          <section className="flex min-w-0 flex-col items-center justify-center p-10 text-center">
+            <div className="font-display text-lg font-bold text-foreground">Aucune conversation</div>
+            <p className="mt-2 max-w-sm text-sm text-ink-muted">
+              Les échanges apparaîtront ici dès que des membres se contacteront.
+            </p>
+          </section>
+        )}
+
       </div>
 
       {/* Reco composer */}
