@@ -157,9 +157,11 @@ function EventCard({
     onSuccess: onDelete,
   });
   const remove = useMutation({
-    mutationFn: () => deleteFn({ data: { eventId: event.id } }),
+    mutationFn: (scope: "one" | "series") => deleteFn({ data: { eventId: event.id, scope } }),
     onSuccess: onDelete,
   });
+  const [editing, setEditing] = useState(false);
+  const isRecurring = !!event.rrule || !!event.recurrence_parent_id;
 
   const options: string[] = Array.isArray(event.poll_options) ? event.poll_options : [];
   const showResults = event.poll_results_visible || isManager;
