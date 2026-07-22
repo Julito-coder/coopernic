@@ -238,18 +238,52 @@ export const setMemberRole = createServerFn({ method: "POST" })
     // Superadmin est un rôle global (sans club)
     const clubId = data.role === "superadmin" ? null : data.clubId;
 
+    // Si on retire le rôle gestionnaire à quelqu'un, s'assurer qu'il en reste au moins un
+    if (data.role !== "gestionnaire" && data.clubId) {
+      const { data: wasGest } = await supabaseAdmin
+        .from("user_roles")
+        .select("user_id")
+        .eq("user_id", data.userId)
+        .eq("role", "gestionnaire")
+        .eq("club_id", data.clubId)
+        .maybeSingle();
+      if (wasGest) {
+        const { count } = await supabaseAdmin
+          .from("user_roles")
+          .select("user_id", { count: "exact", head: true })
+          .eq("role", "gestionnaire")
+          .eq("club_id", data.clubId)
+          .neq("user_id", data.userId);
+        if ((count ?? 0) === 0) {
+          throw new Error(
+            "Impossible : ce club doit conserver au moins un gestionnaire. Désigne d'abord un autre gestionnaire.",
+          );
+        }
+        // Retirer explicitement l'ancien rôle gestionnaire (les rôles peuvent coexister)
+        await supabaseAdmin
+          .from("user_roles")
+          .delete()
+          .eq("user_id", data.userId)
+          .eq("role", "gestionnaire")
+          .eq("club_id", data.clubId);
+        // Si c'était le gestionnaire "principal" du club, en désigner un autre
+        await supabaseAdmin
+          .from("clubs")
+          .update({ gestionnaire_id: null })
+          .eq("id", data.clubId)
+          .eq("gestionnaire_id", data.userId);
+      }
+    }
+
     if (data.role === "gestionnaire") {
       if (!clubId) throw new Error("Un gestionnaire doit être rattaché à un club.");
-      // Un seul gestionnaire par club : retirer l'ancien rôle gestionnaire
-      await supabaseAdmin
-        .from("user_roles")
-        .delete()
-        .eq("role", "gestionnaire")
-        .eq("club_id", clubId);
+      // Plusieurs gestionnaires autorisés — on ne supprime pas les autres.
+      // Désigner comme gestionnaire principal si le club n'en a pas encore.
       await supabaseAdmin
         .from("clubs")
         .update({ gestionnaire_id: data.userId })
-        .eq("id", clubId);
+        .eq("id", clubId)
+        .is("gestionnaire_id", null);
     }
 
     const { error } = await supabaseAdmin
@@ -261,6 +295,7 @@ export const setMemberRole = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
 
 const RevokeSchema = z.object({
   userId: z.string().uuid(),
