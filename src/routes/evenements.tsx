@@ -797,7 +797,42 @@ function CreateEventDialog({
           </div>
 
 
-          {err && <div className="text-sm text-destructive">{err}</div>}
+          <div className="border-t pt-3 space-y-3">
+            <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              Notifications
+            </div>
+            <label className="flex items-start gap-2">
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={notifyOnCreate}
+                onChange={(e) => setNotifyOnCreate(e.target.checked)}
+              />
+              <span>
+                <span className="font-semibold">Prévenir les membres de la création</span>
+                <p className="text-xs text-muted-foreground">
+                  Notification in-app envoyée à tous les membres du club.
+                </p>
+              </span>
+            </label>
+            <label className="flex items-start gap-2">
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={remindNonResponders}
+                onChange={(e) => setRemindNonResponders(e.target.checked)}
+              />
+              <span>
+                <span className="font-semibold">Relance en cas de non-réponse au sondage</span>
+                <p className="text-xs text-muted-foreground">
+                  Rappel envoyé automatiquement 24h avant l'évènement aux membres qui n'ont pas
+                  voté.
+                </p>
+              </span>
+            </label>
+          </div>
+
+
 
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={onClose} className="px-3 py-2 rounded-md border">
