@@ -617,6 +617,38 @@ function AddMemberForm({ clubId, clubName }: { clubId: string; clubName: string 
                   },
                 });
               }
+              // Attribution d'une cotisation (optionnelle)
+              let effectivePlanId = planId;
+              if (planId === "__new__") {
+                if (!npName.trim() || !npAmount) {
+                  throw new Error("Renseigne le nom et le montant du nouveau plan.");
+                }
+                const created = await createPlanFn({
+                  data: {
+                    clubId,
+                    name: npName.trim(),
+                    amountEuros: Number(npAmount),
+                    interval: npInterval,
+                    durationMonths: npDuration ? Number(npDuration) : null,
+                  },
+                });
+                effectivePlanId = created.planId;
+                qc.invalidateQueries({ queryKey: ["cotis-plans", clubId] });
+              }
+              if (effectivePlanId && effectivePlanId !== "__new__") {
+                await assignCotisFn({
+                  data: {
+                    clubId,
+                    userId: res.memberId,
+                    planId: effectivePlanId,
+                    customAmountEuros: customAmount ? Number(customAmount) : null,
+                    startDate: startDate || null,
+                    dueDate: dueDate || null,
+                    alreadyPaid,
+                  },
+                });
+              }
+
               toast.success(
                 res.reinvited
                   ? "Compte existant — email de réinitialisation envoyé."
@@ -634,6 +666,14 @@ function AddMemberForm({ clubId, clubName }: { clubId: string; clubName: string 
               });
               setAppRole("membre");
               setRespModules(new Set());
+              setPlanId("");
+              setCustomAmount("");
+              setDueDate("");
+              setAlreadyPaid(false);
+              setShowNewPlan(false);
+              setNpName("");
+              setNpAmount("");
+              setNpDuration("");
               qc.invalidateQueries({ queryKey: ["club", clubId] });
               qc.invalidateQueries({ queryKey: ["admin"] });
             } catch (err) {
