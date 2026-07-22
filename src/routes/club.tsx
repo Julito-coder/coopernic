@@ -459,7 +459,8 @@ function AddMemberForm({ clubId, clubName }: { clubId: string; clubName: string 
     role: "",
     company: "",
     sector: SECTORS[0],
-    city: CITIES[0],
+    city: "",
+
     email: "",
     phone: "",
   });
@@ -513,7 +514,7 @@ function AddMemberForm({ clubId, clubName }: { clubId: string; clubName: string 
                 role: "",
                 company: "",
                 sector: SECTORS[0],
-                city: CITIES[0],
+                city: "",
                 email: "",
                 phone: "",
               });
@@ -558,18 +559,12 @@ function AddMemberForm({ clubId, clubName }: { clubId: string; clubName: string 
               ))}
             </SelectContent>
           </Select>
-          <Select value={form.city} onValueChange={set("city")}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {CITIES.map((c) => (
-                <SelectItem key={c} value={c}>
-                  {c}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Input
+            placeholder="Ville"
+            value={form.city}
+            onChange={(e) => set("city")(e.target.value)}
+          />
+
           <Input
             placeholder="Email"
             type="email"
