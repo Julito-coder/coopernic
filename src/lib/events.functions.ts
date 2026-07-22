@@ -138,6 +138,11 @@ export const createEvent = createServerFn({ method: "POST" })
       is_paid: data.isPaid,
       price_cents: data.isPaid && data.priceEuros ? Math.round(data.priceEuros * 100) : null,
       attendance_required: data.attendanceRequired,
+      notify_on_create: data.notifyOnCreate,
+      remind_non_responders: data.remindNonResponders,
+      // If notifications are disabled, mark as already-sent to skip cron dispatch
+      notified_new_at: data.notifyOnCreate ? null : new Date().toISOString(),
+      reminder_sent_at: data.remindNonResponders ? null : new Date().toISOString(),
     };
 
     const firstStart = occurrences[0];
