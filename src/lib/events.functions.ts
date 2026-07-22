@@ -302,6 +302,8 @@ export const updateEvent = createServerFn({ method: "POST" })
     if (p.priceEuros !== undefined)
       shared.price_cents = p.priceEuros == null ? null : Math.round(p.priceEuros * 100);
     if (p.attendanceRequired !== undefined) shared.attendance_required = p.attendanceRequired;
+    if (p.notifyOnCreate !== undefined) shared.notify_on_create = p.notifyOnCreate;
+    if (p.remindNonResponders !== undefined) shared.remind_non_responders = p.remindNonResponders;
 
     if (data.scope === "series") {
       const { data: ev } = await supabase
