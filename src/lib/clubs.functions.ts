@@ -7,6 +7,7 @@ export const ALL_MODULES = [
   "messages",
   "evenements",
   "cagnottes",
+  "cotisations",
   "carte",
   "recos",
 ] as const;
