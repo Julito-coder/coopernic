@@ -166,13 +166,30 @@ function ClubInner({ clubId, isSuper }: { clubId: string; isSuper: boolean }) {
         .from("user_roles")
         .select("user_id, role, club_id");
       const map: Record<string, AppRole> = {};
+      const rank: Record<string, number> = { superadmin: 3, gestionnaire: 2, membre: 1 };
       (data ?? []).forEach((r: any) => {
-        if (r.role === "superadmin") map[r.user_id] = "superadmin";
-        else if (r.club_id === clubId && !map[r.user_id]) map[r.user_id] = r.role;
+        if (r.role === "superadmin") {
+          if ((rank[map[r.user_id] ?? ""] ?? 0) < 3) map[r.user_id] = "superadmin";
+        } else if (r.club_id === clubId) {
+          const current = rank[map[r.user_id] ?? ""] ?? 0;
+          if ((rank[r.role] ?? 0) > current) map[r.user_id] = r.role;
+        }
       });
       return map;
     },
   });
+
+  const listPermsFn = useServerFn(listClubModulePermissions);
+  const permsQ = useQuery({
+    queryKey: ["club", clubId, "module-perms"],
+    queryFn: () => listPermsFn({ data: { clubId } }),
+  });
+  const permsByUser: Record<string, Set<string>> = {};
+  for (const p of permsQ.data?.permissions ?? []) {
+    const s = permsByUser[p.user_id] ?? new Set<string>();
+    s.add(p.module);
+    permsByUser[p.user_id] = s;
+  }
 
   const club = clubQ.data;
   const members = membersQ.data ?? [];
@@ -289,6 +306,7 @@ function ClubInner({ clubId, isSuper }: { clubId: string; isSuper: boolean }) {
                   clubId={club.id}
                   isGest={(rolesMap[m.id] ?? "membre") === "gestionnaire"}
                   currentRole={rolesMap[m.id] ?? "membre"}
+                  hasPerms={(permsByUser[m.id]?.size ?? 0) > 0}
                   isSuper={isSuper}
                 />
               ))}
@@ -320,24 +338,38 @@ function ClubInner({ clubId, isSuper }: { clubId: string; isSuper: boolean }) {
   );
 }
 
+type StatusKey = "membre" | "responsable" | "gestionnaire" | "superadmin";
+
 function MemberRowUI({
   member,
   clubId,
   isGest,
   currentRole,
+  hasPerms,
   isSuper,
 }: {
   member: MemberRow;
   clubId: string;
   isGest: boolean;
   currentRole: AppRole;
+  hasPerms: boolean;
   isSuper: boolean;
 }) {
   const qc = useQueryClient();
   const resend = useServerFn(resendInvite);
   const remove = useServerFn(removeMemberFromClub);
   const changeRole = useServerFn(setMemberRole);
+  const setPerms = useServerFn(setUserModulePermissions);
   const [busy, setBusy] = useState(false);
+
+  const status: StatusKey =
+    currentRole === "superadmin"
+      ? "superadmin"
+      : currentRole === "gestionnaire"
+        ? "gestionnaire"
+        : hasPerms
+          ? "responsable"
+          : "membre";
 
   async function doResend() {
     setBusy(true);
@@ -371,18 +403,35 @@ function MemberRowUI({
     }
   }
 
-  async function doChangeRole(next: AppRole) {
-    if (next === currentRole) return;
+  async function doChangeStatus(next: StatusKey) {
+    if (next === status) return;
     if (next === "superadmin" && !isSuper) return;
     setBusy(true);
     try {
-      await changeRole({
-        data: {
-          userId: member.id,
-          clubId: next === "superadmin" ? null : clubId,
-          role: next,
-        },
-      });
+      if (next === "superadmin") {
+        await changeRole({
+          data: { userId: member.id, clubId: null, role: "superadmin" },
+        });
+      } else if (next === "gestionnaire") {
+        if (hasPerms) await setPerms({ data: { clubId, userId: member.id, modules: [] } });
+        await changeRole({
+          data: { userId: member.id, clubId, role: "gestionnaire" },
+        });
+      } else if (next === "membre") {
+        if (currentRole === "gestionnaire") {
+          await changeRole({ data: { userId: member.id, clubId, role: "membre" } });
+        }
+        if (hasPerms) {
+          await setPerms({ data: { clubId, userId: member.id, modules: [] } });
+        }
+      } else if (next === "responsable") {
+        if (currentRole === "gestionnaire") {
+          await changeRole({ data: { userId: member.id, clubId, role: "membre" } });
+        }
+        toast.info(
+          "Sélectionne ses modules dans la carte « Responsables de modules » ci-dessus.",
+        );
+      }
       toast.success("Rôle mis à jour.");
       qc.invalidateQueries({ queryKey: ["club", clubId] });
     } catch (e: any) {
@@ -411,15 +460,16 @@ function MemberRowUI({
       <td className="px-4 py-3 text-muted-foreground">{member.email}</td>
       <td className="px-4 py-3">
         <Select
-          value={currentRole}
-          onValueChange={(v) => doChangeRole(v as AppRole)}
-          disabled={busy || (currentRole === "superadmin" && !isSuper)}
+          value={status}
+          onValueChange={(v) => doChangeStatus(v as StatusKey)}
+          disabled={busy || (status === "superadmin" && !isSuper)}
         >
-          <SelectTrigger className="h-9 w-[160px]">
+          <SelectTrigger className="h-9 w-[170px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="membre">Membre</SelectItem>
+            <SelectItem value="responsable">Responsable</SelectItem>
             <SelectItem value="gestionnaire">Gestionnaire</SelectItem>
             {isSuper && <SelectItem value="superadmin">Super admin</SelectItem>}
           </SelectContent>
