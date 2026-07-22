@@ -217,13 +217,111 @@ function toICalDate(d: Date) {
 export const deleteEvent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
-    z.object({ eventId: z.string().uuid() }).parse(input),
+    z
+      .object({
+        eventId: z.string().uuid(),
+        scope: z.enum(["one", "series"]).default("one"),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase.from("events").delete().eq("id", data.eventId);
+    const { supabase } = context;
+    if (data.scope === "series") {
+      const { data: ev } = await supabase
+        .from("events")
+        .select("id, recurrence_parent_id")
+        .eq("id", data.eventId)
+        .maybeSingle();
+      const parentId = ev?.recurrence_parent_id ?? ev?.id ?? data.eventId;
+      // Delete children then parent
+      const { error: cErr } = await supabase
+        .from("events")
+        .delete()
+        .eq("recurrence_parent_id", parentId);
+      if (cErr) throw new Error(cErr.message);
+      const { error: pErr } = await supabase.from("events").delete().eq("id", parentId);
+      if (pErr) throw new Error(pErr.message);
+      return { ok: true };
+    }
+    const { error } = await supabase.from("events").delete().eq("id", data.eventId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+const UpdateSchema = z.object({
+  eventId: z.string().uuid(),
+  scope: z.enum(["one", "series"]).default("one"),
+  patch: z
+    .object({
+      title: z.string().min(1).max(200).optional(),
+      description: z.string().max(4000).nullable().optional(),
+      startsAt: z.string().datetime().optional(),
+      endsAt: z.string().datetime().nullable().optional(),
+      locationName: z.string().max(200).nullable().optional(),
+      locationAddress: z.string().max(500).nullable().optional(),
+      practicalInfo: z.string().max(4000).nullable().optional(),
+      pollQuestion: z.string().max(300).nullable().optional(),
+      pollOptions: z.array(z.string().min(1).max(120)).max(10).optional(),
+      pollResultsVisible: z.boolean().optional(),
+      isPaid: z.boolean().optional(),
+      priceEuros: z.number().min(0).max(100000).nullable().optional(),
+    })
+    .refine((v) => Object.keys(v).length > 0, "Aucun changement"),
+});
+
+export const updateEvent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => UpdateSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const p = data.patch;
+    // Build DB patch (map camelCase -> snake_case). starts_at/ends_at only apply to "one" scope
+    // to avoid shifting every occurrence to the same date.
+    const shared: Record<string, unknown> = {};
+    if (p.title !== undefined) shared.title = p.title;
+    if (p.description !== undefined) shared.description = p.description;
+    if (p.locationName !== undefined) shared.location_name = p.locationName;
+    if (p.locationAddress !== undefined) shared.location_address = p.locationAddress;
+    if (p.practicalInfo !== undefined) shared.practical_info = p.practicalInfo;
+    if (p.pollQuestion !== undefined) shared.poll_question = p.pollQuestion;
+    if (p.pollOptions !== undefined) shared.poll_options = p.pollOptions;
+    if (p.pollResultsVisible !== undefined) shared.poll_results_visible = p.pollResultsVisible;
+    if (p.isPaid !== undefined) shared.is_paid = p.isPaid;
+    if (p.priceEuros !== undefined)
+      shared.price_cents = p.priceEuros == null ? null : Math.round(p.priceEuros * 100);
+
+    if (data.scope === "series") {
+      const { data: ev } = await supabase
+        .from("events")
+        .select("id, recurrence_parent_id")
+        .eq("id", data.eventId)
+        .maybeSingle();
+      const parentId = ev?.recurrence_parent_id ?? ev?.id ?? data.eventId;
+      // Update parent
+      if (Object.keys(shared).length) {
+        const { error: pErr } = await supabase
+          .from("events")
+          .update(shared)
+          .eq("id", parentId);
+        if (pErr) throw new Error(pErr.message);
+        const { error: cErr } = await supabase
+          .from("events")
+          .update(shared)
+          .eq("recurrence_parent_id", parentId);
+        if (cErr) throw new Error(cErr.message);
+      }
+      return { ok: true };
+    }
+
+    // Single occurrence: also allow date changes
+    const patch = { ...shared };
+    if (p.startsAt !== undefined) patch.starts_at = p.startsAt;
+    if (p.endsAt !== undefined) patch.ends_at = p.endsAt;
+    const { error } = await supabase.from("events").update(patch).eq("id", data.eventId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 
 export const respondToPoll = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
