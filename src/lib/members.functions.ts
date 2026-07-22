@@ -374,6 +374,29 @@ export const removeMemberFromClub = createServerFn({ method: "POST" })
     if (!isSuper && !isManager) throw new Error("Non autorisé.");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+    // Si le membre retiré est gestionnaire, s'assurer qu'il en reste au moins un
+    const { data: wasGest } = await supabaseAdmin
+      .from("user_roles")
+      .select("user_id")
+      .eq("user_id", data.userId)
+      .eq("role", "gestionnaire")
+      .eq("club_id", data.clubId)
+      .maybeSingle();
+    if (wasGest) {
+      const { count } = await supabaseAdmin
+        .from("user_roles")
+        .select("user_id", { count: "exact", head: true })
+        .eq("role", "gestionnaire")
+        .eq("club_id", data.clubId)
+        .neq("user_id", data.userId);
+      if ((count ?? 0) === 0) {
+        throw new Error(
+          "Impossible : ce club doit conserver au moins un gestionnaire. Désigne d'abord un autre gestionnaire avant de retirer celui-ci.",
+        );
+      }
+    }
+
+
     await supabaseAdmin
       .from("user_roles")
       .delete()
