@@ -63,19 +63,25 @@ export const createCotisationPlan = createServerFn({ method: "POST" })
         name: z.string().min(1).max(120),
         amountEuros: z.number().min(0).max(100000),
         interval: IntervalEnum,
+        durationMonths: z.number().int().min(1).max(240).optional().nullable(),
       })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
     await assertManagerOfClub(context.supabase, context.userId, data.clubId);
-    const { error } = await context.supabase.from("cotisation_plans").insert({
-      club_id: data.clubId,
-      name: data.name,
-      amount_cents: Math.round(data.amountEuros * 100),
-      interval: data.interval,
-    });
+    const { data: inserted, error } = await context.supabase
+      .from("cotisation_plans")
+      .insert({
+        club_id: data.clubId,
+        name: data.name,
+        amount_cents: Math.round(data.amountEuros * 100),
+        interval: data.interval,
+        duration_months: data.durationMonths ?? null,
+      })
+      .select("id")
+      .single();
     if (error) throw new Error(error.message);
-    return { ok: true };
+    return { ok: true, planId: inserted?.id as string };
   });
 
 export const togglePlanActive = createServerFn({ method: "POST" })
