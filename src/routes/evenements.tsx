@@ -543,6 +543,7 @@ function CreateEventDialog({
           pollResultsVisible,
           isPaid,
           priceEuros: isPaid && priceEuros ? Number(priceEuros) : null,
+          attendanceRequired,
           rrule,
         },
       }),
