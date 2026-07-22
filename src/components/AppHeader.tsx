@@ -76,7 +76,42 @@ export function AppHeader() {
     (real.user?.user_metadata?.full_name as string | undefined) ??
     real.user?.email?.split("@")[0] ??
     "Membre";
-  const items = NAV.filter((n) => n.roles.includes(effectiveRole));
+
+  const userId = real.user?.id;
+  const modulesQ = useQuery({
+    queryKey: ["user-modules", userId ?? "none"],
+    enabled: !!userId && effectiveRole !== "superadmin",
+    queryFn: async (): Promise<string[] | null> => {
+      // Determine the user's club: either the one they manage or via members table
+      let clubId = real.managedClubId;
+      if (!clubId && userId) {
+        const email = real.user?.email?.toLowerCase();
+        if (email) {
+          const { data } = await supabase
+            .from("members")
+            .select("club_id")
+            .ilike("email", email)
+            .maybeSingle();
+          clubId = data?.club_id ?? null;
+        }
+      }
+      if (!clubId) return null;
+      const { data } = await supabase
+        .from("clubs")
+        .select("modules")
+        .eq("id", clubId)
+        .maybeSingle();
+      return (data?.modules as string[] | null) ?? null;
+    },
+  });
+
+  const modules = modulesQ.data;
+  const items = NAV.filter((n) => n.roles.includes(effectiveRole)).filter((n) => {
+    if (!n.module) return true;
+    if (effectiveRole === "superadmin") return true;
+    if (!modules) return true; // no info yet or no club -> show all
+    return modules.includes(n.module);
+  });
   const primaryItems = items.filter((i) => i.primary).slice(0, 5);
   const overflowItems = items.filter((i) => !i.primary);
   const RoleIcon = ROLE_META[effectiveRole].icon;
