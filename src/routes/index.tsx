@@ -1,5 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import {
   Users,
   CalendarCheck,
@@ -7,65 +9,400 @@ import {
   TrendingUp,
   ArrowRight,
   Check,
+  MapPin,
+  Clock,
+  Euro,
+  Sparkles,
 } from "lucide-react";
 import appMockup from "@/assets/coopernic-app-mockup.png";
 import { useSession } from "@/lib/use-session";
+import { getMyEventsContext, listEvents } from "@/lib/events.functions";
+import { listMySubscriptions } from "@/lib/cotisations.functions";
+import { listPots } from "@/lib/pots.functions";
+import { useRecos, computeStats, CURRENT_USER_ID } from "@/lib/recos-store";
+import { useHasModule } from "@/lib/use-club-modules";
 
 export const Route = createFileRoute("/")({
-  component: Landing,
+  component: Home,
   head: () => ({
     meta: [
       { title: "Coopernic — Le système d'exploitation des business clubs" },
       {
         name: "description",
         content:
-          "Annuaire, événements, cotisations, business tracking. Tout ce qu'il faut pour piloter votre club et activer vos membres, sans Excel ni 12 outils.",
+          "Annuaire, événements, cotisations, business tracking. Tout ce qu'il faut pour piloter votre club et activer vos membres.",
       },
     ],
   }),
 });
 
-function Landing() {
-  const { user, roles, loading } = useSession();
+function Home() {
+  const { user, loading } = useSession();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (loading || !user) return;
-    // Onboarding : première connexion → slides d'accueil
     const onboardedKey = `coopernic.onboarded.${user.id}`;
     const onboarded =
       typeof window !== "undefined" && localStorage.getItem(onboardedKey) === "1";
-    if (!onboarded) {
-      navigate({ to: "/bienvenue", replace: true });
-      return;
-    }
-    // Redirection selon le rôle
-    if (roles.includes("superadmin")) navigate({ to: "/admin", replace: true });
-    else if (roles.includes("gestionnaire")) navigate({ to: "/club", replace: true });
-    else navigate({ to: "/annuaire", replace: true });
-  }, [loading, user, roles, navigate]);
+    if (!onboarded) navigate({ to: "/bienvenue", replace: true });
+  }, [loading, user, navigate]);
 
-  // Utilisateurs non connectés : landing marketing.
-  // Utilisateurs connectés : écran neutre pendant la redirection.
-  if (user) {
-    return <div className="min-h-[60vh]" aria-hidden />;
-  }
-
-  return LandingMarketing();
+  if (loading) return <div className="min-h-[60vh]" aria-hidden />;
+  if (user) return <MemberHome />;
+  return <LandingMarketing />;
 }
 
-function LandingMarketing() {
+/* --------------------------------- MEMBER HOME --------------------------------- */
+
+function MemberHome() {
+  const { user } = useSession();
+  const getCtx = useServerFn(getMyEventsContext);
+  const getEvents = useServerFn(listEvents);
+  const getSubs = useServerFn(listMySubscriptions);
+  const getPots = useServerFn(listPots);
+
+  const ctxQ = useQuery({ queryKey: ["me", "ctx"], queryFn: () => getCtx() });
+  const clubId = ctxQ.data?.clubId ?? null;
+
+  const eventsQ = useQuery({
+    queryKey: ["me", "events", clubId],
+    queryFn: () => getEvents({ data: { clubId: clubId! } }),
+    enabled: !!clubId,
+  });
+  const potsQ = useQuery({
+    queryKey: ["me", "pots", clubId],
+    queryFn: () => getPots({ data: { clubId: clubId! } }),
+    enabled: !!clubId,
+  });
+  const subsQ = useQuery({ queryKey: ["me", "subs"], queryFn: () => getSubs() });
+
+  const now = Date.now();
+  const upcomingEvents = useMemo(() => {
+    return (eventsQ.data?.events ?? [])
+      .filter((e: any) => new Date(e.starts_at).getTime() >= now - 3600_000)
+      .slice(0, 3);
+  }, [eventsQ.data, now]);
+
+  const openPots = useMemo(() => {
+    return (potsQ.data?.pots ?? [])
+      .filter((p: any) => p.status === "open" || p.status === "active")
+      .slice(0, 3);
+  }, [potsQ.data]);
+
+  const pendingSubs = useMemo(() => {
+    return (subsQ.data?.subscriptions ?? []).filter(
+      (s: any) => s.status === "pending" || s.status === "overdue",
+    );
+  }, [subsQ.data]);
+
+  useRecos(); // subscribe
+  const hasReco = useHasModule("recos") || true; // recos always displayed as personal stats
+  const hasCommissions = useHasModule("commissions");
+  const stats = computeStats(CURRENT_USER_ID);
+
+  const firstName =
+    (user?.user_metadata as any)?.full_name?.split(" ")[0] ||
+    user?.email?.split("@")[0] ||
+    "";
 
   return (
+    <div className="mx-auto max-w-3xl px-4 pb-24 pt-6 md:px-6 md:pt-10">
+      {/* Greeting */}
+      <header className="mb-6">
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Bienvenue
+        </p>
+        <h1 className="mt-1 font-display text-2xl font-bold tracking-tight text-foreground md:text-3xl">
+          Bonjour {firstName} 👋
+        </h1>
+      </header>
+
+      {/* Stats */}
+      {hasReco && (
+        <section className="mb-6">
+          <SectionTitle icon={TrendingUp} label="Mes stats" to="/recos" />
+          <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
+            <StatCard label="Reco envoyées" value={stats.sentCount} />
+            <StatCard label="Reco reçues" value={stats.receivedCount} />
+            <StatCard label="Deals signés" value={stats.wonCount} />
+            <StatCard
+              label={hasCommissions ? "Commissions à recevoir" : "CA généré"}
+              value={
+                hasCommissions
+                  ? formatEuro(stats.commissionsToReceive)
+                  : formatEuro(stats.caGenerated)
+              }
+            />
+          </div>
+        </section>
+      )}
+
+      {/* Upcoming events */}
+      <section className="mb-6">
+        <SectionTitle icon={CalendarCheck} label="Évènements à venir" to="/evenements" />
+        <div className="mt-3 space-y-2">
+          {!clubId ? (
+            <EmptyLine text="Aucun club associé pour le moment." />
+          ) : eventsQ.isLoading ? (
+            <SkeletonLine />
+          ) : upcomingEvents.length === 0 ? (
+            <EmptyLine text="Aucun évènement prévu." />
+          ) : (
+            upcomingEvents.map((e: any) => <EventRow key={e.id} event={e} />)
+          )}
+        </div>
+      </section>
+
+      {/* Upcoming payments */}
+      <section className="mb-6">
+        <SectionTitle icon={Wallet} label="Paiements à venir" to="/cagnottes" />
+        <div className="mt-3 space-y-2">
+          {pendingSubs.length === 0 && openPots.length === 0 ? (
+            <EmptyLine text="Aucun paiement en attente." />
+          ) : (
+            <>
+              {pendingSubs.map((s: any) => (
+                <PaymentRow
+                  key={s.id}
+                  title={s.cotisation_plans?.name ?? "Cotisation"}
+                  subtitle={
+                    s.next_due_at
+                      ? `Échéance ${formatDate(s.next_due_at)}`
+                      : "En attente"
+                  }
+                  amount={formatEuro((s.cotisation_plans?.amount_cents ?? 0) / 100)}
+                  to="/cotisations"
+                  status={s.status === "overdue" ? "En retard" : "À régler"}
+                  danger={s.status === "overdue"}
+                />
+              ))}
+              {openPots.map((p: any) => (
+                <PaymentRow
+                  key={p.id}
+                  title={p.title}
+                  subtitle={
+                    p.goal_cents
+                      ? `Objectif ${formatEuro(p.goal_cents / 100)}`
+                      : "Cagnotte ouverte"
+                  }
+                  to="/cagnottes"
+                  status="Ouvert"
+                />
+              ))}
+            </>
+          )}
+        </div>
+      </section>
+
+      {/* Shortcuts */}
+      <section>
+        <SectionTitle icon={Sparkles} label="Raccourcis" />
+        <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
+          <Shortcut to="/annuaire" icon={Users} label="Annuaire" />
+          <Shortcut to="/messages" icon={ArrowRight} label="Messages" />
+          <Shortcut to="/carte" icon={MapPin} label="Carte" />
+          <Shortcut to="/mon-profil" icon={Check} label="Mon profil" />
+        </div>
+      </section>
+    </div>
+  );
+}
+
+/* --------------------------------- SUBCOMPONENTS --------------------------------- */
+
+function SectionTitle({
+  icon: Icon,
+  label,
+  to,
+}: {
+  icon: typeof Users;
+  label: string;
+  to?: string;
+}) {
+  return (
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <Icon className="h-4 w-4 text-accent" />
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-foreground/80">
+          {label}
+        </h2>
+      </div>
+      {to && (
+        <Link
+          to={to}
+          className="text-xs font-medium text-accent hover:underline"
+        >
+          Tout voir →
+        </Link>
+      )}
+    </div>
+  );
+}
+
+function StatCard({ label, value }: { label: string; value: number | string }) {
+  return (
+    <div className="rounded-xl border border-border bg-background p-3">
+      <div className="font-display text-xl font-bold text-foreground">{value}</div>
+      <div className="mt-0.5 text-[11px] leading-tight text-muted-foreground">
+        {label}
+      </div>
+    </div>
+  );
+}
+
+function EventRow({ event }: { event: any }) {
+  return (
+    <Link
+      to="/evenements"
+      className="flex items-center gap-3 rounded-xl border border-border bg-background p-3 transition hover:border-accent/40"
+    >
+      <div className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-lg bg-cream text-center">
+        <div className="text-[10px] font-semibold uppercase text-muted-foreground">
+          {formatMonth(event.starts_at)}
+        </div>
+        <div className="text-sm font-bold text-foreground">
+          {new Date(event.starts_at).getDate()}
+        </div>
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-sm font-semibold text-foreground">
+          {event.title}
+        </div>
+        <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
+          <Clock className="h-3 w-3" />
+          {formatTime(event.starts_at)}
+          {event.location_name && (
+            <>
+              <span>·</span>
+              <span className="truncate">{event.location_name}</span>
+            </>
+          )}
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+function PaymentRow({
+  title,
+  subtitle,
+  amount,
+  status,
+  to,
+  danger,
+}: {
+  title: string;
+  subtitle?: string;
+  amount?: string;
+  status?: string;
+  to: string;
+  danger?: boolean;
+}) {
+  return (
+    <Link
+      to={to}
+      className="flex items-center gap-3 rounded-xl border border-border bg-background p-3 transition hover:border-accent/40"
+    >
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-cream">
+        <Euro className="h-5 w-5 text-accent" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-sm font-semibold text-foreground">{title}</div>
+        {subtitle && (
+          <div className="mt-0.5 truncate text-xs text-muted-foreground">
+            {subtitle}
+          </div>
+        )}
+      </div>
+      <div className="text-right">
+        {amount && (
+          <div className="text-sm font-bold text-foreground">{amount}</div>
+        )}
+        {status && (
+          <div
+            className={`mt-0.5 text-[10px] font-semibold uppercase tracking-wider ${
+              danger ? "text-destructive" : "text-muted-foreground"
+            }`}
+          >
+            {status}
+          </div>
+        )}
+      </div>
+    </Link>
+  );
+}
+
+function Shortcut({
+  to,
+  icon: Icon,
+  label,
+}: {
+  to: string;
+  icon: typeof Users;
+  label: string;
+}) {
+  return (
+    <Link
+      to={to}
+      className="flex flex-col items-center justify-center gap-2 rounded-xl border border-border bg-background p-4 text-center transition hover:border-accent/40"
+    >
+      <Icon className="h-5 w-5 text-accent" />
+      <span className="text-xs font-semibold text-foreground">{label}</span>
+    </Link>
+  );
+}
+
+function EmptyLine({ text }: { text: string }) {
+  return (
+    <div className="rounded-xl border border-dashed border-border bg-background p-4 text-center text-sm text-muted-foreground">
+      {text}
+    </div>
+  );
+}
+
+function SkeletonLine() {
+  return <div className="h-14 animate-pulse rounded-xl bg-muted" />;
+}
+
+/* --------------------------------- Helpers --------------------------------- */
+
+function formatEuro(v: number) {
+  return new Intl.NumberFormat("fr-FR", {
+    style: "currency",
+    currency: "EUR",
+    maximumFractionDigits: 0,
+  }).format(v || 0);
+}
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("fr-FR", {
+    day: "2-digit",
+    month: "short",
+  });
+}
+function formatTime(iso: string) {
+  return new Date(iso).toLocaleTimeString("fr-FR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+function formatMonth(iso: string) {
+  return new Date(iso)
+    .toLocaleDateString("fr-FR", { month: "short" })
+    .replace(".", "");
+}
+
+/* --------------------------------- LANDING MARKETING --------------------------------- */
+
+function LandingMarketing() {
+  return (
     <div className="bg-background text-foreground">
-      {/* HERO — blanc, éditorial */}
       <section className="mx-auto max-w-6xl px-5 pt-10 pb-14 md:px-8 md:pt-20 md:pb-24">
         <div className="grid items-center gap-10 md:grid-cols-[1.1fr_0.9fr] md:gap-16">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-accent/40 bg-accent/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-accent">
               Pour les fondateurs de clubs business
             </div>
-
             <h1 className="mt-6 font-display text-[38px] font-bold leading-[1.05] tracking-tight text-balance text-foreground md:text-6xl">
               Le système
               <br />
@@ -73,33 +410,26 @@ function LandingMarketing() {
               <br />
               <span className="text-accent">votre club business.</span>
             </h1>
-
             <p className="mt-5 max-w-xl text-[15px] leading-relaxed text-muted-foreground md:text-lg">
               Annuaire, évènements, cagnottes, recommandations. Une seule app
               pour animer vos membres et prouver la valeur du club — pas 12 outils.
             </p>
-
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 to="/auth"
                 className="inline-flex h-12 items-center gap-2 rounded-full bg-accent px-6 text-sm font-bold text-accent-foreground transition-transform hover:-translate-y-0.5"
               >
-                Réserver une démo
+                Se connecter
                 <ArrowRight className="h-4 w-4" />
               </Link>
-              <Link
-                to="/annuaire"
+              <a
+                href="mailto:hello@coopernic.fr"
                 className="inline-flex h-12 items-center gap-2 rounded-full border border-border bg-background px-6 text-sm font-semibold text-foreground hover:bg-secondary"
               >
-                Voir le produit
-              </Link>
+                Nous écrire
+              </a>
             </div>
-
-            <p className="mt-4 text-xs text-muted-foreground">
-              Essai 30 jours · Sans carte · Migration depuis Excel offerte
-            </p>
           </div>
-
           <div className="relative mx-auto w-full max-w-[280px] md:max-w-sm">
             <div className="absolute -inset-8 -z-10 rounded-full bg-accent/15 blur-3xl" />
             <img
@@ -112,195 +442,6 @@ function LandingMarketing() {
           </div>
         </div>
       </section>
-
-      {/* PREUVE — bandeau crème avec chiffres clés */}
-      <section className="bg-cream">
-        <div className="mx-auto grid max-w-6xl grid-cols-2 gap-6 px-5 py-10 md:grid-cols-4 md:px-8 md:py-14">
-          {[
-            { n: "1", l: "app pour tout piloter" },
-            { n: "-2 h", l: "de logistique par semaine" },
-            { n: "+30 %", l: "de renouvellements" },
-            { n: "0 €", l: "d'Excel dans votre soirée" },
-          ].map((k) => (
-            <div key={k.l} className="text-center md:text-left">
-              <div className="font-display text-3xl font-bold text-accent md:text-4xl">
-                {k.n}
-              </div>
-              <div className="mt-1 text-xs font-medium uppercase tracking-wider text-muted-foreground md:text-sm md:normal-case md:tracking-normal md:text-foreground/70">
-                {k.l}
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* VALEUR × 3 — sections pleines alternées */}
-      <ValueBlock
-        eyebrow="Réseau"
-        Icon={Users}
-        title="Vos membres se trouvent en 10 secondes."
-        body="Annuaire vivant avec recherche, filtres, entreprises et villes. Un membre = une fiche business à jour, pas une ligne d'Excel."
-        bullets={[
-          "Fiches business complètes",
-          "Recherche & filtres instantanés",
-          "Ouverture inter-clubs Coopernic",
-        ]}
-      />
-
-      <ValueBlock
-        eyebrow="Business tracking"
-        Icon={TrendingUp}
-        title="La preuve chiffrée que le club rapporte."
-        body="Recommandations, deals signés, CA généré, ROI par membre. Vos adhérents voient ce que le club leur rend — et renouvellent."
-        bullets={[
-          "Reco en un clic depuis la messagerie",
-          "Statuts contacté / deal / no deal",
-          "Commissionnement & facturation",
-        ]}
-        reverse
-        tone="cream"
-      />
-
-      <ValueBlock
-        eyebrow="Gestion club"
-        Icon={CalendarCheck}
-        title="Vos soirées, animées. Pas relancées."
-        body="Évènements, sondages de présence, cagnottes, cotisations Stripe. Le bureau anime, la plateforme s'occupe du reste."
-        bullets={[
-          "Évènements + sondage de présence",
-          "Cagnottes payables en ligne",
-          "Cotisations Stripe & relances auto",
-        ]}
-      />
-
-      {/* CIBLE */}
-      <section className="mx-auto max-w-6xl px-5 py-14 md:px-8 md:py-20">
-        <div className="rounded-2xl border border-border bg-cream p-6 md:p-12">
-          <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-accent">
-            Pour qui
-          </div>
-          <h2 className="mt-3 font-display text-2xl font-bold tracking-tight md:text-4xl">
-            Vous fondez ou dirigez un club business.
-            <br />
-            <span className="text-muted-foreground font-medium">
-              Coopernic est fait pour vous.
-            </span>
-          </h2>
-          <ul className="mt-6 grid gap-3 text-[15px] md:mt-8 md:grid-cols-2 md:gap-4">
-            {[
-              "Vous voulez démarquer votre club face aux autres réseaux.",
-              "Vos membres réclament un outil, pas un Google Drive.",
-              "Vous voulez chiffrer le ROI du club, pas juste le raconter.",
-              "Vous n'avez pas 6 mois pour faire développer une app.",
-            ].map((t) => (
-              <li key={t} className="flex gap-3">
-                <Check className="mt-0.5 h-5 w-5 shrink-0 text-accent" />
-                <span>{t}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-      {/* CTA FINAL — bande navy pleine largeur */}
-      <section className="bg-primary text-primary-foreground">
-        <div className="mx-auto max-w-4xl px-5 py-16 text-center md:px-8 md:py-24">
-          <h2 className="font-display text-3xl font-bold tracking-tight text-balance md:text-5xl">
-            Prêt à transformer votre club
-            <br />
-            <span className="text-accent">en machine à ROI ?</span>
-          </h2>
-          <p className="mx-auto mt-5 max-w-xl text-base text-primary-foreground/80 md:text-lg">
-            30 minutes de démo. On vous montre comment vos membres, vos évènements
-            et vos cotisations tiennent dans une seule app — la vôtre.
-          </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Link
-              to="/auth"
-              className="inline-flex h-12 items-center gap-2 rounded-full bg-accent px-7 text-sm font-bold text-accent-foreground transition-transform hover:-translate-y-0.5"
-            >
-              Réserver ma démo <ArrowRight className="h-4 w-4" />
-            </Link>
-            <a
-              href="mailto:hello@coopernic.fr"
-              className="inline-flex h-12 items-center gap-2 rounded-full border border-primary-foreground/30 bg-transparent px-7 text-sm font-semibold text-primary-foreground hover:bg-primary-foreground/10"
-            >
-              Nous écrire
-            </a>
-          </div>
-        </div>
-      </section>
     </div>
-  );
-}
-
-function ValueBlock({
-  eyebrow,
-  Icon,
-  title,
-  body,
-  bullets,
-  reverse,
-  tone,
-}: {
-  eyebrow: string;
-  Icon: typeof Users;
-  title: string;
-  body: string;
-  bullets: string[];
-  reverse?: boolean;
-  tone?: "cream";
-}) {
-  return (
-    <section className={tone === "cream" ? "bg-cream" : "bg-background"}>
-      <div
-        className={`mx-auto grid max-w-6xl items-center gap-10 px-5 py-14 md:grid-cols-2 md:gap-16 md:px-8 md:py-24 ${
-          reverse ? "md:[&>*:first-child]:order-2" : ""
-        }`}
-      >
-        <div>
-          <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-accent/15 text-accent">
-            <Icon className="h-5 w-5" />
-          </div>
-          <div className="mt-4 text-[10px] font-bold uppercase tracking-[0.2em] text-accent">
-            {eyebrow}
-          </div>
-          <h2 className="mt-2 font-display text-3xl font-bold leading-tight tracking-tight md:text-4xl">
-            {title}
-          </h2>
-          <p className="mt-4 text-[15px] leading-relaxed text-muted-foreground md:text-base">
-            {body}
-          </p>
-          <ul className="mt-6 space-y-2.5 text-sm">
-            {bullets.map((b) => (
-              <li key={b} className="flex gap-2.5">
-                <Check className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
-                <span>{b}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div className="relative">
-          <div className="aspect-[4/3] rounded-2xl border border-border bg-cream-soft p-8 shadow-card md:aspect-[5/4]">
-            <div className="h-full w-full rounded-xl border border-border/70 bg-background p-6">
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-accent" />
-                <div className="h-2 w-16 rounded-full bg-muted" />
-              </div>
-              <div className="mt-5 space-y-2.5">
-                <div className="h-3 w-3/4 rounded bg-muted" />
-                <div className="h-3 w-full rounded bg-muted" />
-                <div className="h-3 w-2/3 rounded bg-muted" />
-              </div>
-              <div className="mt-6 grid grid-cols-2 gap-3">
-                <div className="h-16 rounded-lg border border-border bg-cream" />
-                <div className="h-16 rounded-lg border border-accent/30 bg-accent/10" />
-              </div>
-              <div className="mt-4 h-10 rounded-lg bg-primary" />
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
   );
 }
