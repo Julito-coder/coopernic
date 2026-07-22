@@ -17,6 +17,10 @@ import {
   createClubAsGestionnaire,
   updateClubModules,
 } from "@/lib/clubs.functions";
+import {
+  listClubModulePermissions,
+  setUserModulePermissions,
+} from "@/lib/module-perms.functions";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SECTORS, CITIES } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
