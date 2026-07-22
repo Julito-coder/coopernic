@@ -287,11 +287,12 @@ function ClubInner({ clubId, isSuper }: { clubId: string; isSuper: boolean }) {
                   key={m.id}
                   member={m}
                   clubId={club.id}
-                  isGest={m.id === club.gestionnaire_id}
+                  isGest={(rolesMap[m.id] ?? "membre") === "gestionnaire"}
                   currentRole={rolesMap[m.id] ?? "membre"}
                   isSuper={isSuper}
                 />
               ))}
+
               {members.length === 0 && (
                 <tr>
                   <td
