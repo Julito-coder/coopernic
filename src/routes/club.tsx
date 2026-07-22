@@ -306,6 +306,7 @@ function ClubInner({ clubId, isSuper }: { clubId: string; isSuper: boolean }) {
                   clubId={club.id}
                   isGest={(rolesMap[m.id] ?? "membre") === "gestionnaire"}
                   currentRole={rolesMap[m.id] ?? "membre"}
+                  hasPerms={(permsByUser[m.id]?.size ?? 0) > 0}
                   isSuper={isSuper}
                 />
               ))}
