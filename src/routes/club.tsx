@@ -11,6 +11,13 @@ import {
   removeMemberFromClub,
   setMemberRole,
 } from "@/lib/members.functions";
+import {
+  ALL_MODULES,
+  type ModuleKey,
+  createClubAsGestionnaire,
+  updateClubModules,
+} from "@/lib/clubs.functions";
+import { Checkbox } from "@/components/ui/checkbox";
 import { SECTORS, CITIES } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
