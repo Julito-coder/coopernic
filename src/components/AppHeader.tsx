@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import logoMark from "@/assets/coopernic-mark.png";
 import { useSession, signOut, type AppRole } from "@/lib/use-session";
 import {
@@ -42,15 +43,15 @@ type NavItem = {
   primary: boolean; // true = shown in mobile bottom bar
 };
 
-const NAV: NavItem[] = [
+const NAV: (NavItem & { module?: string })[] = [
   { to: "/", label: "Accueil", short: "Accueil", icon: Home, roles: ["superadmin", "gestionnaire", "membre"], primary: true },
-  { to: "/annuaire", label: "Annuaire", short: "Annuaire", icon: UsersIcon, roles: ["superadmin", "gestionnaire", "membre"], primary: true },
-  { to: "/messages", label: "Messages", short: "Messages", icon: MessageSquare, roles: ["superadmin", "gestionnaire", "membre"], primary: true },
-  { to: "/cagnottes", label: "Cagnottes", short: "Cagnottes", icon: Wallet, roles: ["superadmin", "gestionnaire", "membre"], primary: true },
-  { to: "/evenements", label: "Évènements", short: "Events", icon: CalendarDays, roles: ["superadmin", "gestionnaire", "membre"], primary: true },
-  { to: "/carte", label: "Carte", short: "Carte", icon: MapIcon, roles: ["superadmin", "gestionnaire", "membre"], primary: false },
+  { to: "/annuaire", label: "Annuaire", short: "Annuaire", icon: UsersIcon, roles: ["superadmin", "gestionnaire", "membre"], primary: true, module: "annuaire" },
+  { to: "/messages", label: "Messages", short: "Messages", icon: MessageSquare, roles: ["superadmin", "gestionnaire", "membre"], primary: true, module: "messages" },
+  { to: "/cagnottes", label: "Cagnottes", short: "Cagnottes", icon: Wallet, roles: ["superadmin", "gestionnaire", "membre"], primary: true, module: "cagnottes" },
+  { to: "/evenements", label: "Évènements", short: "Events", icon: CalendarDays, roles: ["superadmin", "gestionnaire", "membre"], primary: true, module: "evenements" },
+  { to: "/carte", label: "Carte", short: "Carte", icon: MapIcon, roles: ["superadmin", "gestionnaire", "membre"], primary: false, module: "carte" },
   { to: "/mon-profil", label: "Mon profil", short: "Profil", icon: UserCircle, roles: ["superadmin", "gestionnaire", "membre"], primary: false },
-  { to: "/recos", label: "Stats", short: "Stats", icon: BarChart3, roles: ["superadmin", "gestionnaire", "membre"], primary: false },
+  { to: "/recos", label: "Stats", short: "Stats", icon: BarChart3, roles: ["superadmin", "gestionnaire", "membre"], primary: false, module: "recos" },
   { to: "/club", label: "Mon club", short: "Club", icon: Building2, roles: ["superadmin", "gestionnaire"], primary: false },
   { to: "/admin", label: "Super Admin", short: "Admin", icon: Shield, roles: ["superadmin"], primary: false },
 ];
