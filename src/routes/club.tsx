@@ -21,6 +21,11 @@ import {
   listClubModulePermissions,
   setUserModulePermissions,
 } from "@/lib/module-perms.functions";
+import {
+  listCotisationPlans,
+  createCotisationPlan,
+  assignCotisationToMember,
+} from "@/lib/cotisations.functions";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SECTORS, CITIES } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
