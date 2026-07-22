@@ -179,6 +179,18 @@ function ClubInner({ clubId, isSuper }: { clubId: string; isSuper: boolean }) {
     },
   });
 
+  const listPermsFn = useServerFn(listClubModulePermissions);
+  const permsQ = useQuery({
+    queryKey: ["club", clubId, "module-perms"],
+    queryFn: () => listPermsFn({ data: { clubId } }),
+  });
+  const permsByUser: Record<string, Set<string>> = {};
+  for (const p of permsQ.data?.permissions ?? []) {
+    const s = permsByUser[p.user_id] ?? new Set<string>();
+    s.add(p.module);
+    permsByUser[p.user_id] = s;
+  }
+
   const club = clubQ.data;
   const members = membersQ.data ?? [];
   const rolesMap = rolesQ.data ?? {};
