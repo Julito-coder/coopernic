@@ -460,14 +460,28 @@ function AddMemberForm({ clubId, clubName }: { clubId: string; clubName: string 
     company: "",
     sector: SECTORS[0],
     city: "",
-
     email: "",
     phone: "",
   });
+  const [appRole, setAppRole] = useState<"membre" | "responsable" | "gestionnaire">(
+    "membre",
+  );
+  const [respModules, setRespModules] = useState<Set<ModuleKey>>(new Set());
   const [loading, setLoading] = useState(false);
   const set = (k: keyof typeof form) => (v: string) =>
     setForm((f) => ({ ...f, [k]: v }));
   const invite = useServerFn(inviteMember);
+  const changeRole = useServerFn(setMemberRole);
+  const setPerms = useServerFn(setUserModulePermissions);
+
+  function toggleRespModule(key: ModuleKey, on: boolean) {
+    setRespModules((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(key);
+      else next.delete(key);
+      return next;
+    });
+  }
 
   return (
     <Card>
@@ -484,6 +498,10 @@ function AddMemberForm({ clubId, clubName }: { clubId: string; clubName: string 
             e.preventDefault();
             if (!form.firstName.trim() || !form.lastName.trim() || !form.email.trim()) {
               toast.error("Prénom, nom et email sont requis.");
+              return;
+            }
+            if (appRole === "responsable" && respModules.size === 0) {
+              toast.error("Sélectionne au moins un module pour le responsable.");
               return;
             }
             setLoading(true);
@@ -503,6 +521,19 @@ function AddMemberForm({ clubId, clubName }: { clubId: string; clubName: string 
                   redirectTo: `${window.location.origin}/auth/set-password`,
                 },
               });
+              if (appRole === "gestionnaire") {
+                await changeRole({
+                  data: { userId: res.memberId, clubId, role: "gestionnaire" },
+                });
+              } else if (appRole === "responsable") {
+                await setPerms({
+                  data: {
+                    clubId,
+                    userId: res.memberId,
+                    modules: [...respModules],
+                  },
+                });
+              }
               toast.success(
                 res.reinvited
                   ? "Compte existant — email de réinitialisation envoyé."
@@ -518,6 +549,8 @@ function AddMemberForm({ clubId, clubName }: { clubId: string; clubName: string 
                 email: "",
                 phone: "",
               });
+              setAppRole("membre");
+              setRespModules(new Set());
               qc.invalidateQueries({ queryKey: ["club", clubId] });
               qc.invalidateQueries({ queryKey: ["admin"] });
             } catch (err) {
@@ -564,7 +597,6 @@ function AddMemberForm({ clubId, clubName }: { clubId: string; clubName: string 
             value={form.city}
             onChange={(e) => set("city")(e.target.value)}
           />
-
           <Input
             placeholder="Email"
             type="email"
@@ -576,6 +608,82 @@ function AddMemberForm({ clubId, clubName }: { clubId: string; clubName: string 
             value={form.phone}
             onChange={(e) => set("phone")(e.target.value)}
           />
+
+          <div className="sm:col-span-2 lg:col-span-4 space-y-3 rounded-lg border border-border/60 bg-secondary/30 p-4">
+            <div>
+              <div className="text-sm font-semibold">Rôle dans le club</div>
+              <div className="text-xs text-muted-foreground">
+                Tu pourras le modifier à tout moment ensuite.
+              </div>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-3">
+              {(
+                [
+                  { key: "membre", label: "Membre", desc: "Accès standard aux modules." },
+                  {
+                    key: "responsable",
+                    label: "Responsable",
+                    desc: "Gère certains modules choisis ci-dessous.",
+                  },
+                  {
+                    key: "gestionnaire",
+                    label: "Gestionnaire",
+                    desc: "Tous les droits sur le club.",
+                  },
+                ] as const
+              ).map((opt) => {
+                const active = appRole === opt.key;
+                return (
+                  <button
+                    type="button"
+                    key={opt.key}
+                    onClick={() => setAppRole(opt.key)}
+                    className={
+                      "rounded-lg border p-3 text-left transition " +
+                      (active
+                        ? "border-accent bg-accent/10"
+                        : "border-border/60 hover:bg-secondary/60")
+                    }
+                  >
+                    <div className="text-sm font-semibold">{opt.label}</div>
+                    <div className="text-xs text-muted-foreground">{opt.desc}</div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {appRole === "responsable" && (
+              <div className="space-y-2">
+                <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Modules à gérer
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {ALL_MODULES.map((key) => {
+                    const meta = MODULE_META[key];
+                    const checked = respModules.has(key);
+                    return (
+                      <label
+                        key={key}
+                        className="flex cursor-pointer items-start gap-3 rounded-md border border-border/60 bg-background p-2"
+                      >
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={(v) => toggleRespModule(key, v === true)}
+                        />
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold">{meta.label}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {meta.description}
+                          </div>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="sm:col-span-2 lg:col-span-4">
             <Button type="submit" className="gap-2" disabled={loading}>
               <UserPlus className="h-4 w-4" /> {loading ? "Envoi…" : "Inviter au club"}
