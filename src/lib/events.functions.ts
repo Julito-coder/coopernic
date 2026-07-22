@@ -292,6 +292,7 @@ export const updateEvent = createServerFn({ method: "POST" })
     if (p.isPaid !== undefined) shared.is_paid = p.isPaid;
     if (p.priceEuros !== undefined)
       shared.price_cents = p.priceEuros == null ? null : Math.round(p.priceEuros * 100);
+    if (p.attendanceRequired !== undefined) shared.attendance_required = p.attendanceRequired;
 
     if (data.scope === "series") {
       const { data: ev } = await supabase
