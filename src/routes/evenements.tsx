@@ -561,6 +561,8 @@ function CreateEventDialog({
           isPaid,
           priceEuros: isPaid && priceEuros ? Number(priceEuros) : null,
           attendanceRequired,
+          notifyOnCreate,
+          remindNonResponders,
           rrule,
         },
       }),
