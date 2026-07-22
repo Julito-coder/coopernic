@@ -37,7 +37,22 @@ function euros(cents: number) {
 }
 
 function CotisationsPage() {
-  const { user, roles, managedClubId } = useSession();
+  const { user, roles, managedClubId, loading } = useSession();
+  const ctxFn = useServerFn(getMyEventsContext);
+  const ctx = useQuery({
+    queryKey: ["events-ctx", user?.id ?? "signed-out"],
+    enabled: !!user,
+    queryFn: () => ctxFn(),
+  });
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background p-8 text-sm text-muted-foreground">
+        Chargement des cotisations…
+      </div>
+    );
+  }
+
   if (!user) {
     return (
       <div className="p-8">
@@ -51,8 +66,6 @@ function CotisationsPage() {
 
   const isManager =
     roles.includes("superadmin") || roles.includes("gestionnaire");
-  const ctxFn = useServerFn(getMyEventsContext);
-  const ctx = useQuery({ queryKey: ["events-ctx", user.id], queryFn: () => ctxFn() });
   const clubId = managedClubId ?? ctx.data?.clubId ?? null;
 
   return (
@@ -70,7 +83,17 @@ function CotisationsPage() {
           </div>
         </div>
 
+        {ctx.isError && (
+          <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4 text-sm text-destructive">
+            Impossible de charger le club associé à ton compte.
+          </div>
+        )}
         {clubId && <PlansSection clubId={clubId} isManager={isManager} />}
+        {!clubId && !ctx.isLoading && !ctx.isError && (
+          <div className="rounded-lg border bg-card p-5 text-sm text-muted-foreground">
+            Aucun club n'est associé à ton compte pour le moment.
+          </div>
+        )}
         <MySubscriptionsSection />
         {clubId && isManager && <ClubOverviewSection clubId={clubId} />}
       </div>
