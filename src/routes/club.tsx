@@ -338,24 +338,38 @@ function ClubInner({ clubId, isSuper }: { clubId: string; isSuper: boolean }) {
   );
 }
 
+type StatusKey = "membre" | "responsable" | "gestionnaire" | "superadmin";
+
 function MemberRowUI({
   member,
   clubId,
   isGest,
   currentRole,
+  hasPerms,
   isSuper,
 }: {
   member: MemberRow;
   clubId: string;
   isGest: boolean;
   currentRole: AppRole;
+  hasPerms: boolean;
   isSuper: boolean;
 }) {
   const qc = useQueryClient();
   const resend = useServerFn(resendInvite);
   const remove = useServerFn(removeMemberFromClub);
   const changeRole = useServerFn(setMemberRole);
+  const setPerms = useServerFn(setUserModulePermissions);
   const [busy, setBusy] = useState(false);
+
+  const status: StatusKey =
+    currentRole === "superadmin"
+      ? "superadmin"
+      : currentRole === "gestionnaire"
+        ? "gestionnaire"
+        : hasPerms
+          ? "responsable"
+          : "membre";
 
   async function doResend() {
     setBusy(true);
@@ -389,18 +403,35 @@ function MemberRowUI({
     }
   }
 
-  async function doChangeRole(next: AppRole) {
-    if (next === currentRole) return;
+  async function doChangeStatus(next: StatusKey) {
+    if (next === status) return;
     if (next === "superadmin" && !isSuper) return;
     setBusy(true);
     try {
-      await changeRole({
-        data: {
-          userId: member.id,
-          clubId: next === "superadmin" ? null : clubId,
-          role: next,
-        },
-      });
+      if (next === "superadmin") {
+        await changeRole({
+          data: { userId: member.id, clubId: null, role: "superadmin" },
+        });
+      } else if (next === "gestionnaire") {
+        if (hasPerms) await setPerms({ data: { clubId, userId: member.id, modules: [] } });
+        await changeRole({
+          data: { userId: member.id, clubId, role: "gestionnaire" },
+        });
+      } else if (next === "membre") {
+        if (currentRole === "gestionnaire") {
+          await changeRole({ data: { userId: member.id, clubId, role: "membre" } });
+        }
+        if (hasPerms) {
+          await setPerms({ data: { clubId, userId: member.id, modules: [] } });
+        }
+      } else if (next === "responsable") {
+        if (currentRole === "gestionnaire") {
+          await changeRole({ data: { userId: member.id, clubId, role: "membre" } });
+        }
+        toast.info(
+          "Sélectionne ses modules dans la carte « Responsables de modules » ci-dessus.",
+        );
+      }
       toast.success("Rôle mis à jour.");
       qc.invalidateQueries({ queryKey: ["club", clubId] });
     } catch (e: any) {
@@ -429,15 +460,16 @@ function MemberRowUI({
       <td className="px-4 py-3 text-muted-foreground">{member.email}</td>
       <td className="px-4 py-3">
         <Select
-          value={currentRole}
-          onValueChange={(v) => doChangeRole(v as AppRole)}
-          disabled={busy || (currentRole === "superadmin" && !isSuper)}
+          value={status}
+          onValueChange={(v) => doChangeStatus(v as StatusKey)}
+          disabled={busy || (status === "superadmin" && !isSuper)}
         >
-          <SelectTrigger className="h-9 w-[160px]">
+          <SelectTrigger className="h-9 w-[170px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="membre">Membre</SelectItem>
+            <SelectItem value="responsable">Responsable</SelectItem>
             <SelectItem value="gestionnaire">Gestionnaire</SelectItem>
             {isSuper && <SelectItem value="superadmin">Super admin</SelectItem>}
           </SelectContent>
