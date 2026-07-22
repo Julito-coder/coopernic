@@ -807,6 +807,113 @@ function AddMemberForm({ clubId, clubName }: { clubId: string; clubName: string 
             )}
           </div>
 
+          <div className="sm:col-span-2 lg:col-span-4 space-y-3 rounded-lg border border-border/60 bg-secondary/30 p-4">
+            <div>
+              <div className="text-sm font-semibold">Cotisation</div>
+              <div className="text-xs text-muted-foreground">
+                Attribue un plan à ce membre (ou laisse « Aucune »). Tu peux ajuster le
+                montant, la date de début, l'échéance et marquer la cotisation comme
+                déjà payée.
+              </div>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <select
+                value={planId}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setPlanId(v);
+                  setShowNewPlan(v === "__new__");
+                }}
+                className="rounded-md border border-border/60 bg-background px-3 py-2 text-sm"
+              >
+                <option value="">Aucune cotisation</option>
+                {plans.map((p: any) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} — {(p.amount_cents / 100).toLocaleString("fr-FR")} €
+                    {p.duration_months ? ` · ${p.duration_months} mois` : ""}
+                  </option>
+                ))}
+                <option value="__new__">+ Créer un nouveau plan…</option>
+              </select>
+              {planId && planId !== "__new__" && (
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  value={customAmount}
+                  onChange={(e) => setCustomAmount(e.target.value)}
+                  placeholder="Prix personnalisé € (opt.)"
+                />
+              )}
+            </div>
+
+            {showNewPlan && (
+              <div className="grid gap-2 sm:grid-cols-4 rounded-md border border-border/60 bg-background p-3">
+                <Input
+                  className="sm:col-span-2"
+                  placeholder="Nom (ex: Annuelle 2 ans)"
+                  value={npName}
+                  onChange={(e) => setNpName(e.target.value)}
+                />
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  placeholder="Montant €"
+                  value={npAmount}
+                  onChange={(e) => setNpAmount(e.target.value)}
+                />
+                <select
+                  value={npInterval}
+                  onChange={(e) => setNpInterval(e.target.value as any)}
+                  className="rounded-md border border-border/60 bg-background px-3 py-2 text-sm"
+                >
+                  <option value="monthly">Mensuel</option>
+                  <option value="quarterly">Trimestriel</option>
+                  <option value="yearly">Annuel</option>
+                </select>
+                <Input
+                  className="sm:col-span-4"
+                  type="number"
+                  min="1"
+                  max="240"
+                  placeholder="Durée en mois (optionnel, ex: 24 pour 2 ans)"
+                  value={npDuration}
+                  onChange={(e) => setNpDuration(e.target.value)}
+                />
+              </div>
+            )}
+
+            {planId && (
+              <div className="grid gap-2 sm:grid-cols-3">
+                <label className="text-xs text-muted-foreground">
+                  Date de début
+                  <Input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                  />
+                </label>
+                <label className="text-xs text-muted-foreground">
+                  Échéance (opt.)
+                  <Input
+                    type="date"
+                    value={dueDate}
+                    onChange={(e) => setDueDate(e.target.value)}
+                  />
+                </label>
+                <label className="flex items-end gap-2 pb-2">
+                  <Checkbox
+                    checked={alreadyPaid}
+                    onCheckedChange={(v) => setAlreadyPaid(v === true)}
+                  />
+                  <span className="text-sm">Déjà payée</span>
+                </label>
+              </div>
+            )}
+          </div>
+
+
           <div className="sm:col-span-2 lg:col-span-4">
             <Button type="submit" className="gap-2" disabled={loading}>
               <UserPlus className="h-4 w-4" /> {loading ? "Envoi…" : "Inviter au club"}
