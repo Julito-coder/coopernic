@@ -7,10 +7,11 @@ import {
   listEvents,
   createEvent,
   deleteEvent,
+  updateEvent,
   respondToPoll,
 } from "@/lib/events.functions";
 import { useSession } from "@/lib/use-session";
-import { CalendarDays, MapPin, Trash2, Plus, Euro, Users, Info } from "lucide-react";
+import { CalendarDays, MapPin, Trash2, Plus, Euro, Users, Info, Pencil, Repeat } from "lucide-react";
 
 export const Route = createFileRoute("/evenements")({
   component: EventsPage,
