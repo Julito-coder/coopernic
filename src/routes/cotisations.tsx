@@ -115,17 +115,25 @@ function PlansSection({ clubId, isManager }: { clubId: string; isManager: boolea
 
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
-  const [interval, setInterval] = useState<"monthly" | "quarterly" | "yearly">("monthly");
+  const [interval, setInterval] = useState<"monthly" | "quarterly" | "yearly">("yearly");
+  const [durationMonths, setDurationMonths] = useState<string>("");
   const [err, setErr] = useState<string | null>(null);
 
   const create = useMutation({
     mutationFn: () =>
       createFn({
-        data: { clubId, name, amountEuros: Number(amount), interval },
+        data: {
+          clubId,
+          name,
+          amountEuros: Number(amount),
+          interval,
+          durationMonths: durationMonths ? Number(durationMonths) : null,
+        },
       }),
     onSuccess: () => {
       setName("");
       setAmount("");
+      setDurationMonths("");
       qc.invalidateQueries({ queryKey: ["cotis-plans", clubId] });
     },
     onError: (e: any) => setErr(e.message ?? "Erreur"),
