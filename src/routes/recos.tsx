@@ -12,6 +12,7 @@ import {
   type RecoStatus,
 } from "@/lib/recos-store";
 import { getMember } from "@/lib/mock-data";
+import { useHasModule } from "@/lib/use-club-modules";
 
 export const Route = createFileRoute("/recos")({
   component: StatsPage,
@@ -26,6 +27,7 @@ export const Route = createFileRoute("/recos")({
 function StatsPage() {
   const recos = useRecos();
   const stats = useMemo(() => computeStats(), [recos]);
+  const commissionsEnabled = useHasModule("commissions");
 
   const sent = recos.filter((r) => r.fromMemberId === CURRENT_USER_ID);
   const received = recos.filter((r) => r.toMemberId === CURRENT_USER_ID);
@@ -39,8 +41,16 @@ function StatsPage() {
             Stats
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-ink-muted">
-            Tes recos envoyées et reçues, les statuts, les commissions dues et les factures Stripe.
+            Tes recos envoyées et reçues, les statuts
+            {commissionsEnabled ? ", les commissions dues et les factures Stripe." : "."}
           </p>
+          {!commissionsEnabled && (
+            <p className="mt-2 text-xs text-ink-muted">
+              💡 Active le module <span className="font-semibold text-foreground">Commissions</span> depuis
+              l'espace <Link to="/club" className="underline">Mon club</Link> pour ajouter
+              taux, calcul et facturation d'apport d'affaires.
+            </p>
+          )}
         </div>
         <Link to="/messages" className="rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground transition-transform hover:-translate-y-0.5">
           + Envoyer une reco
@@ -48,28 +58,35 @@ function StatsPage() {
       </header>
 
       {/* KPIs */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className={"grid gap-4 sm:grid-cols-2 " + (commissionsEnabled ? "lg:grid-cols-4" : "lg:grid-cols-2")}>
         <Kpi label="Recos envoyées" value={stats.sentCount} hint={`${stats.wonCount} converties en deal`} />
         <Kpi label="Recos reçues" value={stats.receivedCount} hint={`${stats.wonReceivedCount} closées`} />
-        <Kpi label="Commissions à recevoir" value={fmtEuro(stats.commissionsToReceive)} hint="sur recos envoyées" accent />
-        <Kpi label="Commissions à payer" value={fmtEuro(stats.commissionsDue)} hint="sur recos reçues" />
+        {commissionsEnabled && (
+          <>
+            <Kpi label="Commissions à recevoir" value={fmtEuro(stats.commissionsToReceive)} hint="sur recos envoyées" accent />
+            <Kpi label="Commissions à payer" value={fmtEuro(stats.commissionsDue)} hint="sur recos reçues" />
+          </>
+        )}
       </div>
 
       {/* Two sections */}
       <div className="mt-10 space-y-10">
         <RecoSection
           title="Recos envoyées"
-          subtitle="Suis l'avancement et les commissions qui te reviennent."
+          subtitle={commissionsEnabled ? "Suis l'avancement et les commissions qui te reviennent." : "Suis l'avancement de tes recommandations."}
           recos={sent}
           mode="sent"
+          commissionsEnabled={commissionsEnabled}
         />
         <RecoSection
           title="Recos reçues"
-          subtitle="Mets à jour le statut, génère la facture de commission à payer à l'apporteur."
+          subtitle={commissionsEnabled ? "Mets à jour le statut, génère la facture de commission à payer à l'apporteur." : "Mets à jour le statut de chaque reco reçue."}
           recos={received}
           mode="received"
+          commissionsEnabled={commissionsEnabled}
         />
       </div>
+
 
       {/* Leaderboard */}
       {stats.leaderboard.length > 0 && (
@@ -98,8 +115,8 @@ function StatsPage() {
 }
 
 function RecoSection({
-  title, subtitle, recos, mode,
-}: { title: string; subtitle: string; recos: Reco[]; mode: "sent" | "received" }) {
+  title, subtitle, recos, mode, commissionsEnabled,
+}: { title: string; subtitle: string; recos: Reco[]; mode: "sent" | "received"; commissionsEnabled: boolean }) {
   return (
     <section className="overflow-hidden rounded-3xl border border-border bg-surface shadow-card">
       <header className="flex items-center justify-between gap-4 border-b border-border/70 px-6 py-4">
@@ -124,14 +141,16 @@ function RecoSection({
                 <Th>Prospect</Th>
                 <Th>{mode === "sent" ? "Bénéficiaire" : "Apporteur"}</Th>
                 <Th>Montant</Th>
-                <Th>Comm.</Th>
+                {commissionsEnabled && <Th>Comm.</Th>}
                 <Th>Statut</Th>
-                <Th>{mode === "received" ? "Facture" : "Commission due"}</Th>
+                {commissionsEnabled && (
+                  <Th>{mode === "received" ? "Facture" : "Commission due"}</Th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-border/70">
               {recos.map((r) => (
-                <RecoRow key={r.id} reco={r} mode={mode} />
+                <RecoRow key={r.id} reco={r} mode={mode} commissionsEnabled={commissionsEnabled} />
               ))}
             </tbody>
           </table>
@@ -141,10 +160,11 @@ function RecoSection({
   );
 }
 
-function RecoRow({ reco, mode }: { reco: Reco; mode: "sent" | "received" }) {
+function RecoRow({ reco, mode, commissionsEnabled }: { reco: Reco; mode: "sent" | "received"; commissionsEnabled: boolean }) {
   const counterpart = getMember(mode === "sent" ? reco.toMemberId : reco.fromMemberId);
   const commissionAmount = ((reco.estimatedAmount ?? 0) * (reco.commissionRate ?? 0)) / 100;
   const canInvoice = mode === "received" && reco.status === "deal" && commissionAmount > 0;
+
 
   return (
     <tr className="hover:bg-secondary/40">
