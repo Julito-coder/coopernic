@@ -224,8 +224,6 @@ function RecoRow({ reco, mode, commissionsEnabled }: { reco: Reco; mode: "sent" 
           )}
         </td>
       )}
-        )}
-      </td>
     </tr>
   );
 }
