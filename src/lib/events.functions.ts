@@ -91,6 +91,8 @@ export const createEvent = createServerFn({ method: "POST" })
         isPaid: z.boolean().default(false),
         priceEuros: z.number().min(0).max(100000).optional().nullable(),
         attendanceRequired: z.boolean().default(false),
+        notifyOnCreate: z.boolean().default(true),
+        remindNonResponders: z.boolean().default(true),
         // Recurrence (iCal RRULE). If provided, we materialize up to 52 occurrences.
         rrule: z.string().max(500).optional().nullable(),
       })
