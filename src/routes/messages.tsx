@@ -1,12 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState, useRef, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/lib/use-session";
 import { RecoComposer } from "@/components/RecoComposer";
 import { STATUS_LABEL } from "@/lib/recos-store";
 import type { Message, MessageAttachment } from "@/lib/mock-data";
 import { Paperclip, Image as ImageIcon, UserPlus, Sparkles, Send, X, Search, Plus, MessageSquarePlus } from "lucide-react";
+
 
 export const Route = createFileRoute("/messages")({
   component: MessagesPage,
