@@ -116,6 +116,7 @@ export type Database = {
           amount_cents: number
           club_id: string
           created_at: string
+          duration_months: number | null
           id: string
           interval: string
           name: string
@@ -126,6 +127,7 @@ export type Database = {
           amount_cents: number
           club_id: string
           created_at?: string
+          duration_months?: number | null
           id?: string
           interval: string
           name: string
@@ -136,6 +138,7 @@ export type Database = {
           amount_cents?: number
           club_id?: string
           created_at?: string
+          duration_months?: number | null
           id?: string
           interval?: string
           name?: string
@@ -157,6 +160,7 @@ export type Database = {
           created_at: string
           current_period_end: string | null
           current_period_start: string | null
+          custom_amount_cents: number | null
           id: string
           last_reminded_at: string | null
           last_reminder_step: number
@@ -171,6 +175,7 @@ export type Database = {
           created_at?: string
           current_period_end?: string | null
           current_period_start?: string | null
+          custom_amount_cents?: number | null
           id?: string
           last_reminded_at?: string | null
           last_reminder_step?: number
@@ -185,6 +190,7 @@ export type Database = {
           created_at?: string
           current_period_end?: string | null
           current_period_start?: string | null
+          custom_amount_cents?: number | null
           id?: string
           last_reminded_at?: string | null
           last_reminder_step?: number
