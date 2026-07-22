@@ -462,6 +462,14 @@ function EditEventDialog({
           />
         </Field>
         <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={attendanceRequired}
+            onChange={(e) => setAttendanceRequired(e.target.checked)}
+          />
+          <span>Présence obligatoire pour tous les membres</span>
+        </label>
+        <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" checked={isPaid} onChange={(e) => setIsPaid(e.target.checked)} />
           <span>Évènement payant</span>
         </label>
@@ -475,6 +483,11 @@ function EditEventDialog({
               className="input"
             />
           </Field>
+        )}
+        {isPaid && attendanceRequired && (
+          <p className="text-xs text-orange-700">
+            ⚠️ Le paiement est dû par tous les membres, présents ou non.
+          </p>
         )}
         {err && <p className="text-sm text-destructive">{err}</p>}
         <div className="flex justify-end gap-2 pt-2">
