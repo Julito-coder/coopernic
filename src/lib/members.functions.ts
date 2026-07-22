@@ -319,6 +319,20 @@ export const revokeMemberRole = createServerFn({ method: "POST" })
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+    if (data.role === "gestionnaire" && data.clubId) {
+      const { count } = await supabaseAdmin
+        .from("user_roles")
+        .select("user_id", { count: "exact", head: true })
+        .eq("role", "gestionnaire")
+        .eq("club_id", data.clubId)
+        .neq("user_id", data.userId);
+      if ((count ?? 0) === 0) {
+        throw new Error(
+          "Impossible : ce club doit conserver au moins un gestionnaire. Désigne d'abord un autre gestionnaire.",
+        );
+      }
+    }
+
     let q = supabaseAdmin
       .from("user_roles")
       .delete()
@@ -337,6 +351,7 @@ export const revokeMemberRole = createServerFn({ method: "POST" })
     }
     return { ok: true };
   });
+
 
 // ---------------------------------------------------------------------------
 // Retirer un membre d'un club (super admin OU gestionnaire du club)
