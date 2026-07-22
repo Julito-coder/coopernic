@@ -275,6 +275,8 @@ function ClubInner({ clubId, isSuper }: { clubId: string; isSuper: boolean }) {
         </CardHeader>
       </Card>
 
+      <ClubBioCard club={club} />
+
       <ClubModulesCard club={club} />
 
       <ResponsablesCard club={club} members={members} rolesMap={rolesMap} />
