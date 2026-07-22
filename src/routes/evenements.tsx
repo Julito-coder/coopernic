@@ -359,6 +359,7 @@ function EditEventDialog({
   const [priceEuros, setPriceEuros] = useState<string>(
     event.price_cents != null ? String(event.price_cents / 100) : "",
   );
+  const [attendanceRequired, setAttendanceRequired] = useState<boolean>(!!event.attendance_required);
   const [applySeries, setApplySeries] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
