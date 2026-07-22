@@ -514,6 +514,7 @@ function CreateEventDialog({
   const [pollResultsVisible, setPollResultsVisible] = useState(true);
   const [isPaid, setIsPaid] = useState(false);
   const [priceEuros, setPriceEuros] = useState("");
+  const [attendanceRequired, setAttendanceRequired] = useState(false);
   // Recurrence
   const [isRecurring, setIsRecurring] = useState(false);
   const [freq, setFreq] = useState<"WEEKLY" | "MONTHLY" | "DAILY">("WEEKLY");
