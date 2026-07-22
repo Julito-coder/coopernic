@@ -115,17 +115,25 @@ function PlansSection({ clubId, isManager }: { clubId: string; isManager: boolea
 
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
-  const [interval, setInterval] = useState<"monthly" | "quarterly" | "yearly">("monthly");
+  const [interval, setInterval] = useState<"monthly" | "quarterly" | "yearly">("yearly");
+  const [durationMonths, setDurationMonths] = useState<string>("");
   const [err, setErr] = useState<string | null>(null);
 
   const create = useMutation({
     mutationFn: () =>
       createFn({
-        data: { clubId, name, amountEuros: Number(amount), interval },
+        data: {
+          clubId,
+          name,
+          amountEuros: Number(amount),
+          interval,
+          durationMonths: durationMonths ? Number(durationMonths) : null,
+        },
       }),
     onSuccess: () => {
       setName("");
       setAmount("");
+      setDurationMonths("");
       qc.invalidateQueries({ queryKey: ["cotis-plans", clubId] });
     },
     onError: (e: any) => setErr(e.message ?? "Erreur"),
@@ -159,6 +167,7 @@ function PlansSection({ clubId, isManager }: { clubId: string; isManager: boolea
               </div>
               <div className="text-muted-foreground text-xs">
                 {euros(p.amount_cents)} · {INTERVAL_LABEL[p.interval]}
+                {p.duration_months ? ` · ${p.duration_months} mois` : ""}
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -206,14 +215,14 @@ function PlansSection({ clubId, isManager }: { clubId: string; isManager: boolea
             setErr(null);
             create.mutate();
           }}
-          className="mt-4 grid grid-cols-1 sm:grid-cols-4 gap-2 border-t pt-4"
+          className="mt-4 grid grid-cols-1 sm:grid-cols-5 gap-2 border-t pt-4"
         >
           <input
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Nom du plan"
-            className="input"
+            placeholder="Nom (ex: Annuelle 2 ans)"
+            className="input sm:col-span-2"
           />
           <input
             required
@@ -234,14 +243,23 @@ function PlansSection({ clubId, isManager }: { clubId: string; isManager: boolea
             <option value="quarterly">Trimestriel</option>
             <option value="yearly">Annuel</option>
           </select>
+          <input
+            type="number"
+            min="1"
+            max="240"
+            value={durationMonths}
+            onChange={(e) => setDurationMonths(e.target.value)}
+            placeholder="Durée en mois (opt.)"
+            className="input"
+          />
           <button
             type="submit"
             disabled={create.isPending}
-            className="rounded-md bg-primary text-primary-foreground text-sm font-semibold py-2 flex items-center justify-center gap-1"
+            className="rounded-md bg-primary text-primary-foreground text-sm font-semibold py-2 flex items-center justify-center gap-1 sm:col-span-5"
           >
-            <Plus className="h-4 w-4" /> Ajouter
+            <Plus className="h-4 w-4" /> Ajouter le plan
           </button>
-          {err && <div className="sm:col-span-4 text-xs text-destructive">{err}</div>}
+          {err && <div className="sm:col-span-5 text-xs text-destructive">{err}</div>}
         </form>
       )}
       <style>{`.input { border:1px solid hsl(var(--border)); border-radius:6px; padding:8px 10px; background:hsl(var(--background)); font-size:14px; }`}</style>

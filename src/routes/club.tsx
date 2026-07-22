@@ -21,6 +21,11 @@ import {
   listClubModulePermissions,
   setUserModulePermissions,
 } from "@/lib/module-perms.functions";
+import {
+  listCotisationPlans,
+  createCotisationPlan,
+  assignCotisationToMember,
+} from "@/lib/cotisations.functions";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SECTORS, CITIES } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
@@ -527,6 +532,31 @@ function AddMemberForm({ clubId, clubName }: { clubId: string; clubName: string 
   const changeRole = useServerFn(setMemberRole);
   const setPerms = useServerFn(setUserModulePermissions);
 
+  // ---- Cotisation section ----
+  const listPlansFn = useServerFn(listCotisationPlans);
+  const createPlanFn = useServerFn(createCotisationPlan);
+  const assignCotisFn = useServerFn(assignCotisationToMember);
+  const plansQ = useQuery({
+    queryKey: ["cotis-plans", clubId],
+    queryFn: () => listPlansFn({ data: { clubId } }),
+  });
+  const plans = plansQ.data?.plans ?? [];
+  const [planId, setPlanId] = useState<string>(""); // "" = aucune
+  const [customAmount, setCustomAmount] = useState<string>("");
+  const [startDate, setStartDate] = useState<string>(
+    () => new Date().toISOString().slice(0, 10),
+  );
+  const [dueDate, setDueDate] = useState<string>("");
+  const [alreadyPaid, setAlreadyPaid] = useState<boolean>(false);
+  // Inline new plan creation
+  const [showNewPlan, setShowNewPlan] = useState(false);
+  const [npName, setNpName] = useState("");
+  const [npAmount, setNpAmount] = useState("");
+  const [npInterval, setNpInterval] = useState<"monthly" | "quarterly" | "yearly">(
+    "yearly",
+  );
+  const [npDuration, setNpDuration] = useState<string>("");
+
   function toggleRespModule(key: ModuleKey, on: boolean) {
     setRespModules((prev) => {
       const next = new Set(prev);
@@ -587,6 +617,38 @@ function AddMemberForm({ clubId, clubName }: { clubId: string; clubName: string 
                   },
                 });
               }
+              // Attribution d'une cotisation (optionnelle)
+              let effectivePlanId = planId;
+              if (planId === "__new__") {
+                if (!npName.trim() || !npAmount) {
+                  throw new Error("Renseigne le nom et le montant du nouveau plan.");
+                }
+                const created = await createPlanFn({
+                  data: {
+                    clubId,
+                    name: npName.trim(),
+                    amountEuros: Number(npAmount),
+                    interval: npInterval,
+                    durationMonths: npDuration ? Number(npDuration) : null,
+                  },
+                });
+                effectivePlanId = created.planId;
+                qc.invalidateQueries({ queryKey: ["cotis-plans", clubId] });
+              }
+              if (effectivePlanId && effectivePlanId !== "__new__") {
+                await assignCotisFn({
+                  data: {
+                    clubId,
+                    userId: res.memberId,
+                    planId: effectivePlanId,
+                    customAmountEuros: customAmount ? Number(customAmount) : null,
+                    startDate: startDate || null,
+                    dueDate: dueDate || null,
+                    alreadyPaid,
+                  },
+                });
+              }
+
               toast.success(
                 res.reinvited
                   ? "Compte existant — email de réinitialisation envoyé."
@@ -604,6 +666,14 @@ function AddMemberForm({ clubId, clubName }: { clubId: string; clubName: string 
               });
               setAppRole("membre");
               setRespModules(new Set());
+              setPlanId("");
+              setCustomAmount("");
+              setDueDate("");
+              setAlreadyPaid(false);
+              setShowNewPlan(false);
+              setNpName("");
+              setNpAmount("");
+              setNpDuration("");
               qc.invalidateQueries({ queryKey: ["club", clubId] });
               qc.invalidateQueries({ queryKey: ["admin"] });
             } catch (err) {
@@ -736,6 +806,113 @@ function AddMemberForm({ clubId, clubName }: { clubId: string; clubName: string 
               </div>
             )}
           </div>
+
+          <div className="sm:col-span-2 lg:col-span-4 space-y-3 rounded-lg border border-border/60 bg-secondary/30 p-4">
+            <div>
+              <div className="text-sm font-semibold">Cotisation</div>
+              <div className="text-xs text-muted-foreground">
+                Attribue un plan à ce membre (ou laisse « Aucune »). Tu peux ajuster le
+                montant, la date de début, l'échéance et marquer la cotisation comme
+                déjà payée.
+              </div>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <select
+                value={planId}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setPlanId(v);
+                  setShowNewPlan(v === "__new__");
+                }}
+                className="rounded-md border border-border/60 bg-background px-3 py-2 text-sm"
+              >
+                <option value="">Aucune cotisation</option>
+                {plans.map((p: any) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} — {(p.amount_cents / 100).toLocaleString("fr-FR")} €
+                    {p.duration_months ? ` · ${p.duration_months} mois` : ""}
+                  </option>
+                ))}
+                <option value="__new__">+ Créer un nouveau plan…</option>
+              </select>
+              {planId && planId !== "__new__" && (
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  value={customAmount}
+                  onChange={(e) => setCustomAmount(e.target.value)}
+                  placeholder="Prix personnalisé € (opt.)"
+                />
+              )}
+            </div>
+
+            {showNewPlan && (
+              <div className="grid gap-2 sm:grid-cols-4 rounded-md border border-border/60 bg-background p-3">
+                <Input
+                  className="sm:col-span-2"
+                  placeholder="Nom (ex: Annuelle 2 ans)"
+                  value={npName}
+                  onChange={(e) => setNpName(e.target.value)}
+                />
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  placeholder="Montant €"
+                  value={npAmount}
+                  onChange={(e) => setNpAmount(e.target.value)}
+                />
+                <select
+                  value={npInterval}
+                  onChange={(e) => setNpInterval(e.target.value as any)}
+                  className="rounded-md border border-border/60 bg-background px-3 py-2 text-sm"
+                >
+                  <option value="monthly">Mensuel</option>
+                  <option value="quarterly">Trimestriel</option>
+                  <option value="yearly">Annuel</option>
+                </select>
+                <Input
+                  className="sm:col-span-4"
+                  type="number"
+                  min="1"
+                  max="240"
+                  placeholder="Durée en mois (optionnel, ex: 24 pour 2 ans)"
+                  value={npDuration}
+                  onChange={(e) => setNpDuration(e.target.value)}
+                />
+              </div>
+            )}
+
+            {planId && (
+              <div className="grid gap-2 sm:grid-cols-3">
+                <label className="text-xs text-muted-foreground">
+                  Date de début
+                  <Input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                  />
+                </label>
+                <label className="text-xs text-muted-foreground">
+                  Échéance (opt.)
+                  <Input
+                    type="date"
+                    value={dueDate}
+                    onChange={(e) => setDueDate(e.target.value)}
+                  />
+                </label>
+                <label className="flex items-end gap-2 pb-2">
+                  <Checkbox
+                    checked={alreadyPaid}
+                    onCheckedChange={(v) => setAlreadyPaid(v === true)}
+                  />
+                  <span className="text-sm">Déjà payée</span>
+                </label>
+              </div>
+            )}
+          </div>
+
 
           <div className="sm:col-span-2 lg:col-span-4">
             <Button type="submit" className="gap-2" disabled={loading}>
