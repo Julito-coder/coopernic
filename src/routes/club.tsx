@@ -139,7 +139,7 @@ function ClubInner({ clubId, isSuper }: { clubId: string; isSuper: boolean }) {
     queryFn: async (): Promise<ClubRow | null> => {
       const { data, error } = await supabase
         .from("clubs")
-        .select("id, name, city, gestionnaire_id, open_to_network, modules")
+        .select("id, name, city, gestionnaire_id, open_to_network, modules, bio")
         .eq("id", clubId)
         .maybeSingle();
       if (error) throw error;
