@@ -306,7 +306,16 @@ function CreateEventDialog({
   const [pollResultsVisible, setPollResultsVisible] = useState(true);
   const [isPaid, setIsPaid] = useState(false);
   const [priceEuros, setPriceEuros] = useState("");
+  // Recurrence
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [freq, setFreq] = useState<"WEEKLY" | "MONTHLY" | "DAILY">("WEEKLY");
+  const [interval, setInterval] = useState("1");
+  const [count, setCount] = useState("10");
   const [err, setErr] = useState<string | null>(null);
+
+  const rrule = isRecurring
+    ? `FREQ=${freq};INTERVAL=${Math.max(1, Number(interval) || 1)};COUNT=${Math.max(1, Math.min(52, Number(count) || 1))}`
+    : null;
 
   const submit = useMutation({
     mutationFn: () =>
@@ -325,6 +334,7 @@ function CreateEventDialog({
           pollResultsVisible,
           isPaid,
           priceEuros: isPaid && priceEuros ? Number(priceEuros) : null,
+          rrule,
         },
       }),
     onSuccess: onCreated,
