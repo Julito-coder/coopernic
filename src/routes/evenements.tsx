@@ -200,15 +200,41 @@ function EventCard({
           )}
         </div>
         {isManager && (
-          <button
-            onClick={() => {
-              if (confirm("Supprimer cet évènement ?")) remove.mutate();
-            }}
-            className="text-muted-foreground hover:text-destructive"
-            aria-label="Supprimer"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-1">
+            {isRecurring && (
+              <span
+                className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2 py-0.5 text-[10px] font-semibold text-accent"
+                title="Évènement récurrent"
+              >
+                <Repeat className="h-3 w-3" /> Série
+              </span>
+            )}
+            <button
+              onClick={() => setEditing(true)}
+              className="text-muted-foreground hover:text-foreground"
+              aria-label="Modifier"
+            >
+              <Pencil className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => {
+                if (isRecurring) {
+                  const choice = window.prompt(
+                    "Supprimer : tape 'un' pour cette date, 'serie' pour toute la série.",
+                    "un",
+                  );
+                  if (choice === "un") remove.mutate("one");
+                  else if (choice === "serie") remove.mutate("series");
+                } else if (confirm("Supprimer cet évènement ?")) {
+                  remove.mutate("one");
+                }
+              }}
+              className="text-muted-foreground hover:text-destructive"
+              aria-label="Supprimer"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
         )}
       </div>
 
