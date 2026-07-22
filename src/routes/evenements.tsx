@@ -832,7 +832,7 @@ function CreateEventDialog({
             </label>
           </div>
 
-
+          {err && <div className="text-sm text-destructive">{err}</div>}
 
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={onClose} className="px-3 py-2 rounded-md border">
