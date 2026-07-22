@@ -208,6 +208,33 @@ export type Database = {
           },
         ]
       }
+      direct_messages: {
+        Row: {
+          attachment: Json | null
+          body: string | null
+          created_at: string
+          id: string
+          recipient_id: string
+          sender_id: string
+        }
+        Insert: {
+          attachment?: Json | null
+          body?: string | null
+          created_at?: string
+          id?: string
+          recipient_id: string
+          sender_id: string
+        }
+        Update: {
+          attachment?: Json | null
+          body?: string | null
+          created_at?: string
+          id?: string
+          recipient_id?: string
+          sender_id?: string
+        }
+        Relationships: []
+      }
       event_responses: {
         Row: {
           event_id: string
