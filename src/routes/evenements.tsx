@@ -194,6 +194,11 @@ function EventCard({
                 <Euro className="h-3.5 w-3.5" /> {euros(event.price_cents)}
               </span>
             )}
+            {event.attendance_required && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-semibold text-orange-700">
+                Présence obligatoire
+              </span>
+            )}
           </div>
           {event.description && (
             <p className="text-sm mt-2 whitespace-pre-wrap">{event.description}</p>
