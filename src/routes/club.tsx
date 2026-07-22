@@ -17,6 +17,10 @@ import {
   createClubAsGestionnaire,
   updateClubModules,
 } from "@/lib/clubs.functions";
+import {
+  listClubModulePermissions,
+  setUserModulePermissions,
+} from "@/lib/module-perms.functions";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SECTORS, CITIES } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
@@ -254,6 +258,10 @@ function ClubInner({ clubId, isSuper }: { clubId: string; isSuper: boolean }) {
       </Card>
 
       <ClubModulesCard club={club} />
+
+      <ResponsablesCard club={club} members={members} />
+
+
 
 
       <AddMemberForm clubId={club.id} clubName={club.name} />
@@ -600,6 +608,10 @@ const MODULE_META: Record<ModuleKey, { label: string; description: string }> = {
     label: "Cagnottes",
     description: "Cagnottes partagées avec paiements Stripe.",
   },
+  cotisations: {
+    label: "Cotisations",
+    description: "Plans mensuel / trimestriel / annuel, relances automatiques.",
+  },
   carte: {
     label: "Carte",
     description: "Géolocalisation des membres et proposition de café.",
@@ -804,5 +816,111 @@ function CreateClubForm() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function ResponsablesCard({
+  club,
+  members,
+}: {
+  club: ClubRow;
+  members: MemberRow[];
+}) {
+  const qc = useQueryClient();
+  const listFn = useServerFn(listClubModulePermissions);
+  const setFn = useServerFn(setUserModulePermissions);
+  const q = useQuery({
+    queryKey: ["club", club.id, "module-perms"],
+    queryFn: () => listFn({ data: { clubId: club.id } }),
+  });
+  const perms = q.data?.permissions ?? [];
+  const byUser: Record<string, Set<string>> = {};
+  for (const p of perms) {
+    const set = byUser[p.user_id] ?? new Set();
+    set.add(p.module);
+    byUser[p.user_id] = set;
+  }
+  const enabledModules = (club.modules ?? []) as string[];
+  const [openUser, setOpenUser] = useState<string | null>(null);
+
+  async function save(userId: string, modules: string[]) {
+    try {
+      await setFn({ data: { clubId: club.id, userId, modules } });
+      toast.success("Droits mis à jour.");
+      qc.invalidateQueries({ queryKey: ["club", club.id, "module-perms"] });
+    } catch (e: any) {
+      toast.error(e.message ?? "Erreur");
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="font-display">Responsables de modules</CardTitle>
+        <CardDescription>
+          Délègue la gestion d'un module (évènements, cotisations…) à un membre. Il
+          pourra créer et modifier ce module uniquement.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {members.map((m) => {
+          const userPerms = byUser[m.id] ?? new Set<string>();
+          const isOpen = openUser === m.id;
+          return (
+            <div key={m.id} className="rounded-md border p-3 text-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-semibold">
+                    {m.first_name} {m.last_name}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {userPerms.size > 0
+                      ? `Responsable de : ${[...userPerms].join(", ")}`
+                      : "Aucun droit de gestion"}
+                  </div>
+                </div>
+                <button
+                  onClick={() => setOpenUser(isOpen ? null : m.id)}
+                  className="px-2 py-1 rounded-md border text-xs"
+                >
+                  {isOpen ? "Fermer" : "Configurer"}
+                </button>
+              </div>
+              {isOpen && (
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  {enabledModules.map((mod) => {
+                    const meta = (MODULE_META as any)[mod];
+                    const checked = userPerms.has(mod);
+                    return (
+                      <label
+                        key={mod}
+                        className="flex items-center gap-2 rounded-md border p-2 cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(e) => {
+                            const next = new Set(userPerms);
+                            if (e.target.checked) next.add(mod);
+                            else next.delete(mod);
+                            save(m.id, [...next]);
+                          }}
+                        />
+                        <span className="text-xs font-medium">
+                          {meta?.label ?? mod}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+        {members.length === 0 && (
+          <p className="text-sm text-muted-foreground">Aucun membre à déléguer.</p>
+        )}
+      </CardContent>
+    </Card>
   );
 }

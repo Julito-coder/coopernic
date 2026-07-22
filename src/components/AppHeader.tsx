@@ -48,6 +48,7 @@ const NAV: (NavItem & { module?: string })[] = [
   { to: "/annuaire", label: "Annuaire", short: "Annuaire", icon: UsersIcon, roles: ["superadmin", "gestionnaire", "membre"], primary: true, module: "annuaire" },
   { to: "/messages", label: "Messages", short: "Messages", icon: MessageSquare, roles: ["superadmin", "gestionnaire", "membre"], primary: true, module: "messages" },
   { to: "/cagnottes", label: "Cagnottes", short: "Cagnottes", icon: Wallet, roles: ["superadmin", "gestionnaire", "membre"], primary: true, module: "cagnottes" },
+  { to: "/cotisations", label: "Cotisations", short: "Cotis.", icon: Wallet, roles: ["superadmin", "gestionnaire", "membre"], primary: false, module: "cotisations" },
   { to: "/evenements", label: "Évènements", short: "Events", icon: CalendarDays, roles: ["superadmin", "gestionnaire", "membre"], primary: true, module: "evenements" },
   { to: "/carte", label: "Carte", short: "Carte", icon: MapIcon, roles: ["superadmin", "gestionnaire", "membre"], primary: false, module: "carte" },
   { to: "/mon-profil", label: "Mon profil", short: "Profil", icon: UserCircle, roles: ["superadmin", "gestionnaire", "membre"], primary: false },

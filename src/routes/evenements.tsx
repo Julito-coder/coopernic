@@ -306,7 +306,16 @@ function CreateEventDialog({
   const [pollResultsVisible, setPollResultsVisible] = useState(true);
   const [isPaid, setIsPaid] = useState(false);
   const [priceEuros, setPriceEuros] = useState("");
+  // Recurrence
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [freq, setFreq] = useState<"WEEKLY" | "MONTHLY" | "DAILY">("WEEKLY");
+  const [interval, setInterval] = useState("1");
+  const [count, setCount] = useState("10");
   const [err, setErr] = useState<string | null>(null);
+
+  const rrule = isRecurring
+    ? `FREQ=${freq};INTERVAL=${Math.max(1, Number(interval) || 1)};COUNT=${Math.max(1, Math.min(52, Number(count) || 1))}`
+    : null;
 
   const submit = useMutation({
     mutationFn: () =>
@@ -325,6 +334,7 @@ function CreateEventDialog({
           pollResultsVisible,
           isPaid,
           priceEuros: isPaid && priceEuros ? Number(priceEuros) : null,
+          rrule,
         },
       }),
     onSuccess: onCreated,
@@ -383,6 +393,55 @@ function CreateEventDialog({
               />
             </Field>
           </div>
+
+          <div className="border-t pt-3 space-y-2">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={isRecurring}
+                onChange={(e) => setIsRecurring(e.target.checked)}
+              />
+              <span className="font-semibold">Évènement récurrent</span>
+            </label>
+            {isRecurring && (
+              <div className="grid grid-cols-3 gap-2">
+                <Field label="Fréquence">
+                  <select
+                    value={freq}
+                    onChange={(e) => setFreq(e.target.value as any)}
+                    className="input"
+                  >
+                    <option value="DAILY">Quotidien</option>
+                    <option value="WEEKLY">Hebdomadaire</option>
+                    <option value="MONTHLY">Mensuel</option>
+                  </select>
+                </Field>
+                <Field label="Tous les">
+                  <input
+                    type="number"
+                    min="1"
+                    value={interval}
+                    onChange={(e) => setInterval(e.target.value)}
+                    className="input"
+                  />
+                </Field>
+                <Field label="Nb occurrences">
+                  <input
+                    type="number"
+                    min="1"
+                    max="52"
+                    value={count}
+                    onChange={(e) => setCount(e.target.value)}
+                    className="input"
+                  />
+                </Field>
+                <div className="col-span-3 text-xs text-muted-foreground">
+                  RRULE: <code>{rrule}</code>
+                </div>
+              </div>
+            )}
+          </div>
+
           <Field label="Lieu (nom)">
             <input
               value={locationName}

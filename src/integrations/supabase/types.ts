@@ -47,6 +47,167 @@ export type Database = {
         }
         Relationships: []
       }
+      cotisation_payments: {
+        Row: {
+          amount_cents: number
+          club_id: string
+          created_at: string
+          id: string
+          paid_at: string | null
+          period_end: string | null
+          period_start: string | null
+          status: string
+          stripe_session_id: string | null
+          subscription_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_cents: number
+          club_id: string
+          created_at?: string
+          id?: string
+          paid_at?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          status?: string
+          stripe_session_id?: string | null
+          subscription_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_cents?: number
+          club_id?: string
+          created_at?: string
+          id?: string
+          paid_at?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          status?: string
+          stripe_session_id?: string | null
+          subscription_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cotisation_payments_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cotisation_payments_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "cotisation_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cotisation_plans: {
+        Row: {
+          active: boolean
+          amount_cents: number
+          club_id: string
+          created_at: string
+          id: string
+          interval: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          amount_cents: number
+          club_id: string
+          created_at?: string
+          id?: string
+          interval: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          amount_cents?: number
+          club_id?: string
+          created_at?: string
+          id?: string
+          interval?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cotisation_plans_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cotisation_subscriptions: {
+        Row: {
+          club_id: string
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          id: string
+          last_reminded_at: string | null
+          last_reminder_step: number
+          next_due_at: string | null
+          plan_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          last_reminded_at?: string | null
+          last_reminder_step?: number
+          next_due_at?: string | null
+          plan_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          last_reminded_at?: string | null
+          last_reminder_step?: number
+          next_due_at?: string | null
+          plan_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cotisation_subscriptions_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cotisation_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "cotisation_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_responses: {
         Row: {
           event_id: string
@@ -98,7 +259,9 @@ export type Database = {
           poll_results_visible: boolean
           practical_info: string | null
           price_cents: number | null
+          recurrence_parent_id: string | null
           reminder_sent_at: string | null
+          rrule: string | null
           starts_at: string
           status: string
           title: string
@@ -122,7 +285,9 @@ export type Database = {
           poll_results_visible?: boolean
           practical_info?: string | null
           price_cents?: number | null
+          recurrence_parent_id?: string | null
           reminder_sent_at?: string | null
+          rrule?: string | null
           starts_at: string
           status?: string
           title: string
@@ -146,7 +311,9 @@ export type Database = {
           poll_results_visible?: boolean
           practical_info?: string | null
           price_cents?: number | null
+          recurrence_parent_id?: string | null
           reminder_sent_at?: string | null
+          rrule?: string | null
           starts_at?: string
           status?: string
           title?: string
@@ -158,6 +325,13 @@ export type Database = {
             columns: ["club_id"]
             isOneToOne: false
             referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_recurrence_parent_id_fkey"
+            columns: ["recurrence_parent_id"]
+            isOneToOne: false
+            referencedRelation: "events"
             referencedColumns: ["id"]
           },
         ]
@@ -418,6 +592,38 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "pots_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_module_permissions: {
+        Row: {
+          club_id: string
+          created_at: string
+          id: string
+          module: string
+          user_id: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          id?: string
+          module: string
+          user_id: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          id?: string
+          module?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_module_permissions_club_id_fkey"
             columns: ["club_id"]
             isOneToOne: false
             referencedRelation: "clubs"

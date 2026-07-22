@@ -90,36 +90,79 @@ export const createEvent = createServerFn({ method: "POST" })
         pollResultsVisible: z.boolean().default(true),
         isPaid: z.boolean().default(false),
         priceEuros: z.number().min(0).max(100000).optional().nullable(),
+        // Recurrence (iCal RRULE). If provided, we materialize up to 52 occurrences.
+        rrule: z.string().max(500).optional().nullable(),
       })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const { data: ev, error } = await supabase
+
+    // Compute occurrence dates (parent + children). Cap at 52 occurrences, 2 years ahead max.
+    const startDate = new Date(data.startsAt);
+    const endDate = data.endsAt ? new Date(data.endsAt) : null;
+    const durationMs = endDate ? endDate.getTime() - startDate.getTime() : 0;
+
+    let occurrences: Date[] = [startDate];
+    if (data.rrule) {
+      try {
+        const { rrulestr } = await import("rrule");
+        const rule = rrulestr(
+          data.rrule.startsWith("DTSTART") ? data.rrule : `DTSTART:${toICalDate(startDate)}\nRRULE:${data.rrule.replace(/^RRULE:/, "")}`,
+        );
+        const horizon = new Date();
+        horizon.setFullYear(horizon.getFullYear() + 2);
+        const list = rule.between(startDate, horizon, true).slice(0, 52);
+        if (list.length) occurrences = list;
+      } catch (e) {
+        console.error("[events] invalid RRULE", e);
+      }
+    }
+
+    const basePayload = {
+      club_id: data.clubId,
+      created_by: userId,
+      title: data.title,
+      description: data.description ?? null,
+      location_name: data.locationName ?? null,
+      location_address: data.locationAddress ?? null,
+      location_lat: data.locationLat ?? null,
+      location_lng: data.locationLng ?? null,
+      practical_info: data.practicalInfo ?? null,
+      poll_question: data.pollQuestion ?? null,
+      poll_options: data.pollOptions,
+      poll_results_visible: data.pollResultsVisible,
+      is_paid: data.isPaid,
+      price_cents: data.isPaid && data.priceEuros ? Math.round(data.priceEuros * 100) : null,
+    };
+
+    const firstStart = occurrences[0];
+    const firstEnd = endDate ? new Date(firstStart.getTime() + durationMs) : null;
+
+    const { data: parent, error } = await supabase
       .from("events")
       .insert({
-        club_id: data.clubId,
-        created_by: userId,
-        title: data.title,
-        description: data.description ?? null,
-        starts_at: data.startsAt,
-        ends_at: data.endsAt ?? null,
-        location_name: data.locationName ?? null,
-        location_address: data.locationAddress ?? null,
-        location_lat: data.locationLat ?? null,
-        location_lng: data.locationLng ?? null,
-        practical_info: data.practicalInfo ?? null,
-        poll_question: data.pollQuestion ?? null,
-        poll_options: data.pollOptions,
-        poll_results_visible: data.pollResultsVisible,
-        is_paid: data.isPaid,
-        price_cents: data.isPaid && data.priceEuros ? Math.round(data.priceEuros * 100) : null,
+        ...basePayload,
+        starts_at: firstStart.toISOString(),
+        ends_at: firstEnd ? firstEnd.toISOString() : null,
+        rrule: data.rrule ?? null,
       })
       .select()
       .single();
     if (error) throw new Error(error.message);
 
-    // Immediately notify club members of the new event (admin bypasses RLS to insert for others)
+    // Insert child occurrences (skip index 0 which is the parent)
+    if (occurrences.length > 1) {
+      const rows = occurrences.slice(1).map((occ) => ({
+        ...basePayload,
+        starts_at: occ.toISOString(),
+        ends_at: endDate ? new Date(occ.getTime() + durationMs).toISOString() : null,
+        recurrence_parent_id: parent.id,
+      }));
+      await supabase.from("events").insert(rows);
+    }
+
+    // Notify members (parent only)
     try {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { data: mem } = await supabaseAdmin
@@ -129,25 +172,45 @@ export const createEvent = createServerFn({ method: "POST" })
       const rows = (mem ?? []).map((m) => ({
         user_id: m.id,
         club_id: data.clubId,
-        event_id: ev.id,
+        event_id: parent.id,
         type: "new_event",
-        title: `Nouvel évènement : ${data.title}`,
-        body: new Date(data.startsAt).toLocaleString("fr-FR", {
-          weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
-        }) + (data.locationName ? ` · ${data.locationName}` : ""),
+        title: `Nouvel évènement : ${data.title}${occurrences.length > 1 ? ` (${occurrences.length} dates)` : ""}`,
+        body:
+          firstStart.toLocaleString("fr-FR", {
+            weekday: "short",
+            day: "2-digit",
+            month: "short",
+            hour: "2-digit",
+            minute: "2-digit",
+          }) + (data.locationName ? ` · ${data.locationName}` : ""),
         link: "/evenements",
       }));
       if (rows.length) await supabaseAdmin.from("notifications").insert(rows);
       await supabaseAdmin
         .from("events")
         .update({ notified_new_at: new Date().toISOString() })
-        .eq("id", ev.id);
+        .eq("id", parent.id);
     } catch (e) {
       console.error("[events] failed to dispatch new_event notifications", e);
     }
 
-    return { event: ev };
+    return { event: parent, occurrences: occurrences.length };
   });
+
+function toICalDate(d: Date) {
+  // YYYYMMDDTHHmmssZ
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return (
+    d.getUTCFullYear().toString() +
+    pad(d.getUTCMonth() + 1) +
+    pad(d.getUTCDate()) +
+    "T" +
+    pad(d.getUTCHours()) +
+    pad(d.getUTCMinutes()) +
+    pad(d.getUTCSeconds()) +
+    "Z"
+  );
+}
 
 
 
