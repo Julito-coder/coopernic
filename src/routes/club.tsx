@@ -514,7 +514,7 @@ function AddMemberForm({ clubId, clubName }: { clubId: string; clubName: string 
                 role: "",
                 company: "",
                 sector: SECTORS[0],
-                city: CITIES[0],
+                city: "",
                 email: "",
                 phone: "",
               });
