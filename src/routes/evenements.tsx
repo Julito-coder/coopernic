@@ -7,10 +7,11 @@ import {
   listEvents,
   createEvent,
   deleteEvent,
+  updateEvent,
   respondToPoll,
 } from "@/lib/events.functions";
 import { useSession } from "@/lib/use-session";
-import { CalendarDays, MapPin, Trash2, Plus, Euro, Users, Info } from "lucide-react";
+import { CalendarDays, MapPin, Trash2, Plus, Euro, Users, Info, Pencil, Repeat } from "lucide-react";
 
 export const Route = createFileRoute("/evenements")({
   component: EventsPage,
@@ -156,9 +157,11 @@ function EventCard({
     onSuccess: onDelete,
   });
   const remove = useMutation({
-    mutationFn: () => deleteFn({ data: { eventId: event.id } }),
+    mutationFn: (scope: "one" | "series") => deleteFn({ data: { eventId: event.id, scope } }),
     onSuccess: onDelete,
   });
+  const [editing, setEditing] = useState(false);
+  const isRecurring = !!event.rrule || !!event.recurrence_parent_id;
 
   const options: string[] = Array.isArray(event.poll_options) ? event.poll_options : [];
   const showResults = event.poll_results_visible || isManager;
@@ -197,15 +200,41 @@ function EventCard({
           )}
         </div>
         {isManager && (
-          <button
-            onClick={() => {
-              if (confirm("Supprimer cet évènement ?")) remove.mutate();
-            }}
-            className="text-muted-foreground hover:text-destructive"
-            aria-label="Supprimer"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-1">
+            {isRecurring && (
+              <span
+                className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2 py-0.5 text-[10px] font-semibold text-accent"
+                title="Évènement récurrent"
+              >
+                <Repeat className="h-3 w-3" /> Série
+              </span>
+            )}
+            <button
+              onClick={() => setEditing(true)}
+              className="text-muted-foreground hover:text-foreground"
+              aria-label="Modifier"
+            >
+              <Pencil className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => {
+                if (isRecurring) {
+                  const choice = window.prompt(
+                    "Supprimer : tape 'un' pour cette date, 'serie' pour toute la série.",
+                    "un",
+                  );
+                  if (choice === "un") remove.mutate("one");
+                  else if (choice === "serie") remove.mutate("series");
+                } else if (confirm("Supprimer cet évènement ?")) {
+                  remove.mutate("one");
+                }
+              }}
+              className="text-muted-foreground hover:text-destructive"
+              aria-label="Supprimer"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
         )}
       </div>
 
@@ -280,6 +309,180 @@ function EventCard({
           </div>
         </div>
       )}
+
+      {editing && (
+        <EditEventDialog
+          event={event}
+          isRecurring={isRecurring}
+          onClose={() => setEditing(false)}
+          onSaved={() => {
+            setEditing(false);
+            onDelete();
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function EditEventDialog({
+  event,
+  isRecurring,
+  onClose,
+  onSaved,
+}: {
+  event: any;
+  isRecurring: boolean;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const updateFn = useServerFn(updateEvent);
+  const [title, setTitle] = useState<string>(event.title ?? "");
+  const [description, setDescription] = useState<string>(event.description ?? "");
+  const toLocal = (iso: string | null) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+  const [startsAt, setStartsAt] = useState<string>(toLocal(event.starts_at));
+  const [endsAt, setEndsAt] = useState<string>(toLocal(event.ends_at));
+  const [locationName, setLocationName] = useState<string>(event.location_name ?? "");
+  const [locationAddress, setLocationAddress] = useState<string>(event.location_address ?? "");
+  const [practicalInfo, setPracticalInfo] = useState<string>(event.practical_info ?? "");
+  const [isPaid, setIsPaid] = useState<boolean>(!!event.is_paid);
+  const [priceEuros, setPriceEuros] = useState<string>(
+    event.price_cents != null ? String(event.price_cents / 100) : "",
+  );
+  const [applySeries, setApplySeries] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const save = useMutation({
+    mutationFn: () => {
+      const patch: any = {
+        title,
+        description: description || null,
+        locationName: locationName || null,
+        locationAddress: locationAddress || null,
+        practicalInfo: practicalInfo || null,
+        isPaid,
+        priceEuros: isPaid && priceEuros ? Number(priceEuros) : null,
+      };
+      if (!applySeries) {
+        patch.startsAt = new Date(startsAt).toISOString();
+        patch.endsAt = endsAt ? new Date(endsAt).toISOString() : null;
+      }
+      return updateFn({
+        data: {
+          eventId: event.id,
+          scope: applySeries ? "series" : "one",
+          patch,
+        },
+      });
+    },
+    onSuccess: onSaved,
+    onError: (e: any) => setErr(e.message ?? "Erreur"),
+  });
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="bg-card border rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto p-5 space-y-3">
+        <div className="flex justify-between items-center">
+          <h3 className="font-semibold text-lg">Modifier l'évènement</h3>
+          <button onClick={onClose} className="text-muted-foreground text-xl leading-none">×</button>
+        </div>
+        {isRecurring && (
+          <label className="flex items-center gap-2 rounded-md border bg-accent/5 p-2 text-sm">
+            <input
+              type="checkbox"
+              checked={applySeries}
+              onChange={(e) => setApplySeries(e.target.checked)}
+            />
+            <span>
+              Appliquer à <strong>toute la série</strong> (sinon uniquement cette date)
+            </span>
+          </label>
+        )}
+        <Field label="Titre">
+          <input value={title} onChange={(e) => setTitle(e.target.value)} className="input" />
+        </Field>
+        <Field label="Description">
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="input min-h-[70px]"
+          />
+        </Field>
+        {!applySeries && (
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Début">
+              <input
+                type="datetime-local"
+                value={startsAt}
+                onChange={(e) => setStartsAt(e.target.value)}
+                className="input"
+              />
+            </Field>
+            <Field label="Fin">
+              <input
+                type="datetime-local"
+                value={endsAt}
+                onChange={(e) => setEndsAt(e.target.value)}
+                className="input"
+              />
+            </Field>
+          </div>
+        )}
+        <Field label="Lieu (nom)">
+          <input
+            value={locationName}
+            onChange={(e) => setLocationName(e.target.value)}
+            className="input"
+          />
+        </Field>
+        <Field label="Adresse">
+          <input
+            value={locationAddress}
+            onChange={(e) => setLocationAddress(e.target.value)}
+            className="input"
+          />
+        </Field>
+        <Field label="Infos pratiques">
+          <textarea
+            value={practicalInfo}
+            onChange={(e) => setPracticalInfo(e.target.value)}
+            className="input min-h-[60px]"
+          />
+        </Field>
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={isPaid} onChange={(e) => setIsPaid(e.target.checked)} />
+          <span>Évènement payant</span>
+        </label>
+        {isPaid && (
+          <Field label="Prix (€)">
+            <input
+              type="number"
+              step="0.01"
+              value={priceEuros}
+              onChange={(e) => setPriceEuros(e.target.value)}
+              className="input"
+            />
+          </Field>
+        )}
+        {err && <p className="text-sm text-destructive">{err}</p>}
+        <div className="flex justify-end gap-2 pt-2">
+          <button onClick={onClose} className="px-3 py-2 rounded-md border text-sm">
+            Annuler
+          </button>
+          <button
+            onClick={() => save.mutate()}
+            disabled={save.isPending || !title}
+            className="px-3 py-2 rounded-md bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-50"
+          >
+            {save.isPending ? "Enregistrement…" : "Enregistrer"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
