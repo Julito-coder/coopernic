@@ -320,7 +320,7 @@ function MessagesPage() {
             </div>
             <Link
               to="/membres/$id"
-              params={{ id: member.id }}
+              params={{ id: member.memberId }}
               className="text-xs font-semibold text-accent hover:underline"
             >
               Fiche →
