@@ -169,8 +169,8 @@ export const updateMyProfile = createServerFn({ method: "POST" })
     const { error } = await context.supabase
       .from("members")
       .update({
-        first_name: data.firstName || null,
-        last_name: data.lastName || null,
+        first_name: data.firstName,
+        last_name: data.lastName,
         role: data.role || null,
         company: data.company || null,
         sector: data.sector || null,
@@ -182,7 +182,7 @@ export const updateMyProfile = createServerFn({ method: "POST" })
         tags: data.tags,
         looking_for: data.lookingFor,
         can_offer: data.canOffer,
-      })
+      } as never)
       .eq("id", context.userId);
     if (error) throw new Error(error.message);
     return { ok: true };
