@@ -277,7 +277,7 @@ export const updateEvent = createServerFn({ method: "POST" })
     const p = data.patch;
     // Build DB patch (map camelCase -> snake_case). starts_at/ends_at only apply to "one" scope
     // to avoid shifting every occurrence to the same date.
-    const shared: Record<string, unknown> = {};
+    const shared: any = {};
     if (p.title !== undefined) shared.title = p.title;
     if (p.description !== undefined) shared.description = p.description;
     if (p.locationName !== undefined) shared.location_name = p.locationName;
@@ -314,7 +314,7 @@ export const updateEvent = createServerFn({ method: "POST" })
     }
 
     // Single occurrence: also allow date changes
-    const patch = { ...shared };
+    const patch: any = { ...shared };
     if (p.startsAt !== undefined) patch.starts_at = p.startsAt;
     if (p.endsAt !== undefined) patch.ends_at = p.endsAt;
     const { error } = await supabase.from("events").update(patch).eq("id", data.eventId);
