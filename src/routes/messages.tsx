@@ -490,7 +490,7 @@ function MessagesPage() {
           emptyLabel="Aucun membre dans votre club."
           onClose={() => setContactPickerOpen(false)}
           onPick={(memberId) => {
-            pushMessage({ attachment: { kind: "contact", memberId } });
+            void insertMessage({ attachment: { kind: "contact", memberId } });
             setContactPickerOpen(false);
           }}
         />
