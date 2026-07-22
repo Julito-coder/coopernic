@@ -109,3 +109,82 @@ export const getClubMemberLocations = createServerFn({ method: "GET" })
         lng: m.office_lng as number,
       }));
   });
+
+// ------------------ Fiche pro ------------------
+
+export const getMyProfile = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await context.supabase
+      .from("members")
+      .select(
+        "first_name, last_name, role, company, sector, city, phone, bio, website, linkedin_url, tags, looking_for, can_offer",
+      )
+      .eq("id", context.userId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return {
+      firstName: data?.first_name ?? "",
+      lastName: data?.last_name ?? "",
+      role: data?.role ?? "",
+      company: data?.company ?? "",
+      sector: data?.sector ?? "",
+      city: data?.city ?? "",
+      phone: data?.phone ?? "",
+      bio: data?.bio ?? "",
+      website: data?.website ?? "",
+      linkedinUrl: data?.linkedin_url ?? "",
+      tags: (data?.tags ?? []) as string[],
+      lookingFor: (data?.looking_for ?? []) as string[],
+      canOffer: (data?.can_offer ?? []) as string[],
+    };
+  });
+
+const ProfileSchema = z.object({
+  firstName: z.string().trim().max(80),
+  lastName: z.string().trim().max(80),
+  role: z.string().trim().max(120),
+  company: z.string().trim().max(160),
+  sector: z.string().trim().max(120),
+  city: z.string().trim().max(120),
+  phone: z.string().trim().max(40),
+  bio: z.string().trim().max(1200),
+  website: z.string().trim().max(300).refine(
+    (v) => v === "" || /^https?:\/\/.+/i.test(v),
+    { message: "URL invalide (doit commencer par http:// ou https://)" },
+  ),
+  linkedinUrl: z.string().trim().max(300).refine(
+    (v) => v === "" || /^https?:\/\/.+/i.test(v),
+    { message: "URL invalide (doit commencer par http:// ou https://)" },
+  ),
+  tags: z.array(z.string().trim().max(40)).max(20),
+  lookingFor: z.array(z.string().trim().max(80)).max(20),
+  canOffer: z.array(z.string().trim().max(80)).max(20),
+});
+
+export const updateMyProfile = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => ProfileSchema.parse(i))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase
+      .from("members")
+      .update({
+        first_name: data.firstName || null,
+        last_name: data.lastName || null,
+        role: data.role || null,
+        company: data.company || null,
+        sector: data.sector || null,
+        city: data.city || null,
+        phone: data.phone || null,
+        bio: data.bio || null,
+        website: data.website || null,
+        linkedin_url: data.linkedinUrl || null,
+        tags: data.tags,
+        looking_for: data.lookingFor,
+        can_offer: data.canOffer,
+      })
+      .eq("id", context.userId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
