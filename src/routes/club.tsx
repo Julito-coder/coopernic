@@ -68,6 +68,7 @@ type ClubRow = {
   gestionnaire_id: string | null;
   open_to_network: boolean;
   modules: string[] | null;
+  bio: string | null;
 };
 type MemberRow = {
   id: string;
