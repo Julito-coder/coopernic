@@ -380,6 +380,7 @@ export type Database = {
           id: string
           invited_at: string | null
           last_name: string
+          linkedin_url: string | null
           looking_for: string[] | null
           office_address: string | null
           office_lat: number | null
@@ -390,6 +391,7 @@ export type Database = {
           share_office_location: boolean
           tags: string[] | null
           updated_at: string
+          website: string | null
         }
         Insert: {
           activated_at?: string | null
@@ -404,6 +406,7 @@ export type Database = {
           id: string
           invited_at?: string | null
           last_name: string
+          linkedin_url?: string | null
           looking_for?: string[] | null
           office_address?: string | null
           office_lat?: number | null
@@ -414,6 +417,7 @@ export type Database = {
           share_office_location?: boolean
           tags?: string[] | null
           updated_at?: string
+          website?: string | null
         }
         Update: {
           activated_at?: string | null
@@ -428,6 +432,7 @@ export type Database = {
           id?: string
           invited_at?: string | null
           last_name?: string
+          linkedin_url?: string | null
           looking_for?: string[] | null
           office_address?: string | null
           office_lat?: number | null
@@ -438,6 +443,7 @@ export type Database = {
           share_office_location?: boolean
           tags?: string[] | null
           updated_at?: string
+          website?: string | null
         }
         Relationships: [
           {
