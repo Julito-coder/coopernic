@@ -194,6 +194,11 @@ function EventCard({
                 <Euro className="h-3.5 w-3.5" /> {euros(event.price_cents)}
               </span>
             )}
+            {event.attendance_required && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-semibold text-orange-700">
+                Présence obligatoire
+              </span>
+            )}
           </div>
           {event.description && (
             <p className="text-sm mt-2 whitespace-pre-wrap">{event.description}</p>
@@ -354,6 +359,7 @@ function EditEventDialog({
   const [priceEuros, setPriceEuros] = useState<string>(
     event.price_cents != null ? String(event.price_cents / 100) : "",
   );
+  const [attendanceRequired, setAttendanceRequired] = useState<boolean>(!!event.attendance_required);
   const [applySeries, setApplySeries] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -367,6 +373,7 @@ function EditEventDialog({
         practicalInfo: practicalInfo || null,
         isPaid,
         priceEuros: isPaid && priceEuros ? Number(priceEuros) : null,
+        attendanceRequired,
       };
       if (!applySeries) {
         patch.startsAt = new Date(startsAt).toISOString();
@@ -455,6 +462,14 @@ function EditEventDialog({
           />
         </Field>
         <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={attendanceRequired}
+            onChange={(e) => setAttendanceRequired(e.target.checked)}
+          />
+          <span>Présence obligatoire pour tous les membres</span>
+        </label>
+        <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" checked={isPaid} onChange={(e) => setIsPaid(e.target.checked)} />
           <span>Évènement payant</span>
         </label>
@@ -468,6 +483,11 @@ function EditEventDialog({
               className="input"
             />
           </Field>
+        )}
+        {isPaid && attendanceRequired && (
+          <p className="text-xs text-orange-700">
+            ⚠️ Le paiement est dû par tous les membres, présents ou non.
+          </p>
         )}
         {err && <p className="text-sm text-destructive">{err}</p>}
         <div className="flex justify-end gap-2 pt-2">
@@ -509,6 +529,7 @@ function CreateEventDialog({
   const [pollResultsVisible, setPollResultsVisible] = useState(true);
   const [isPaid, setIsPaid] = useState(false);
   const [priceEuros, setPriceEuros] = useState("");
+  const [attendanceRequired, setAttendanceRequired] = useState(false);
   // Recurrence
   const [isRecurring, setIsRecurring] = useState(false);
   const [freq, setFreq] = useState<"WEEKLY" | "MONTHLY" | "DAILY">("WEEKLY");
@@ -537,6 +558,7 @@ function CreateEventDialog({
           pollResultsVisible,
           isPaid,
           priceEuros: isPaid && priceEuros ? Number(priceEuros) : null,
+          attendanceRequired,
           rrule,
         },
       }),
@@ -725,6 +747,21 @@ function CreateEventDialog({
             <label className="flex items-center gap-2">
               <input
                 type="checkbox"
+                checked={attendanceRequired}
+                onChange={(e) => setAttendanceRequired(e.target.checked)}
+              />
+              <span className="font-semibold">Présence obligatoire pour tous les membres</span>
+            </label>
+            <p className="text-xs text-muted-foreground">
+              Si activé, l'évènement concerne tous les membres du club. Sinon, chacun est libre de
+              répondre au sondage.
+            </p>
+          </div>
+
+          <div className="border-t pt-3 space-y-2">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
                 checked={isPaid}
                 onChange={(e) => setIsPaid(e.target.checked)}
               />
@@ -742,13 +779,19 @@ function CreateEventDialog({
                 />
               </Field>
             )}
-            {isPaid && (
+            {isPaid && attendanceRequired && (
+              <p className="text-xs text-orange-700">
+                ⚠️ Le paiement sera dû par tous les membres, présents ou non.
+              </p>
+            )}
+            {isPaid && !attendanceRequired && (
               <p className="text-xs text-muted-foreground">
                 Après création, une cagnotte pourra être liée à cet évènement pour encaisser les
                 paiements.
               </p>
             )}
           </div>
+
 
           {err && <div className="text-sm text-destructive">{err}</div>}
 

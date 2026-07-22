@@ -242,6 +242,7 @@ export type Database = {
       }
       events: {
         Row: {
+          attendance_required: boolean
           club_id: string
           created_at: string
           created_by: string
@@ -268,6 +269,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          attendance_required?: boolean
           club_id: string
           created_at?: string
           created_by: string
@@ -294,6 +296,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          attendance_required?: boolean
           club_id?: string
           created_at?: string
           created_by?: string

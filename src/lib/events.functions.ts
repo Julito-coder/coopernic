@@ -90,6 +90,7 @@ export const createEvent = createServerFn({ method: "POST" })
         pollResultsVisible: z.boolean().default(true),
         isPaid: z.boolean().default(false),
         priceEuros: z.number().min(0).max(100000).optional().nullable(),
+        attendanceRequired: z.boolean().default(false),
         // Recurrence (iCal RRULE). If provided, we materialize up to 52 occurrences.
         rrule: z.string().max(500).optional().nullable(),
       })
@@ -134,6 +135,7 @@ export const createEvent = createServerFn({ method: "POST" })
       poll_results_visible: data.pollResultsVisible,
       is_paid: data.isPaid,
       price_cents: data.isPaid && data.priceEuros ? Math.round(data.priceEuros * 100) : null,
+      attendance_required: data.attendanceRequired,
     };
 
     const firstStart = occurrences[0];
@@ -265,6 +267,7 @@ const UpdateSchema = z.object({
       pollResultsVisible: z.boolean().optional(),
       isPaid: z.boolean().optional(),
       priceEuros: z.number().min(0).max(100000).nullable().optional(),
+      attendanceRequired: z.boolean().optional(),
     })
     .refine((v) => Object.keys(v).length > 0, "Aucun changement"),
 });
@@ -289,6 +292,7 @@ export const updateEvent = createServerFn({ method: "POST" })
     if (p.isPaid !== undefined) shared.is_paid = p.isPaid;
     if (p.priceEuros !== undefined)
       shared.price_cents = p.priceEuros == null ? null : Math.round(p.priceEuros * 100);
+    if (p.attendanceRequired !== undefined) shared.attendance_required = p.attendanceRequired;
 
     if (data.scope === "series") {
       const { data: ev } = await supabase
