@@ -68,6 +68,7 @@ type ClubRow = {
   gestionnaire_id: string | null;
   open_to_network: boolean;
   modules: string[] | null;
+  bio: string | null;
 };
 type MemberRow = {
   id: string;
@@ -138,7 +139,7 @@ function ClubInner({ clubId, isSuper }: { clubId: string; isSuper: boolean }) {
     queryFn: async (): Promise<ClubRow | null> => {
       const { data, error } = await supabase
         .from("clubs")
-        .select("id, name, city, gestionnaire_id, open_to_network, modules")
+        .select("id, name, city, gestionnaire_id, open_to_network, modules, bio")
         .eq("id", clubId)
         .maybeSingle();
       if (error) throw error;
@@ -273,6 +274,8 @@ function ClubInner({ clubId, isSuper }: { clubId: string; isSuper: boolean }) {
           </div>
         </CardHeader>
       </Card>
+
+      <ClubBioCard club={club} />
 
       <ClubModulesCard club={club} />
 
@@ -779,6 +782,59 @@ const MODULE_META: Record<ModuleKey, { label: string; description: string }> = {
     description: "Active le commissionnement pour apport d'affaires : taux, calcul auto et génération de facture.",
   },
 };
+
+function ClubBioCard({ club }: { club: ClubRow }) {
+  const qc = useQueryClient();
+  const [value, setValue] = useState(club.bio ?? "");
+  const [saving, setSaving] = useState(false);
+  const dirty = (value ?? "") !== (club.bio ?? "");
+
+  async function save() {
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("clubs")
+        .update({ bio: value.trim() || null })
+        .eq("id", club.id);
+      if (error) throw error;
+      toast.success("Bio du club enregistrée.");
+      qc.invalidateQueries({ queryKey: ["club", club.id] });
+    } catch (e: any) {
+      toast.error(e.message ?? "Erreur");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="font-display">Bio du club</CardTitle>
+        <CardDescription>
+          Présente ton club en quelques lignes. Cette description est visible par tes membres et,
+          si ton club est ouvert au réseau, par les membres des autres clubs Coopernic.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <textarea
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          maxLength={800}
+          rows={4}
+          placeholder="Ex : Club business fondé en 2022 à Mougins, réunions hebdo le mardi matin, esprit convivial et orienté apports d'affaires…"
+          className="w-full resize-y rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none ring-ring/50 focus:ring-2"
+        />
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-xs text-muted-foreground">{value.length}/800</span>
+          <Button size="sm" onClick={save} disabled={!dirty || saving}>
+            {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Enregistrer
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 function ClubModulesCard({ club }: { club: ClubRow }) {
   const qc = useQueryClient();

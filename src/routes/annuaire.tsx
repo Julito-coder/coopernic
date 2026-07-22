@@ -1,130 +1,190 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
-import { SECTORS, CITIES, type Member } from "@/lib/mock-data";
-import { MemberCard } from "@/components/MemberCard";
-import {
-  useAuth,
-  allMembers,
-  membersOfClub,
-  networkMembers,
-  getClub,
-  listClubs,
-} from "@/lib/auth-store";
-import { Globe2, Users, Lock } from "lucide-react";
+import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useSession } from "@/lib/use-session";
+import { Globe2, Users, Lock, Loader2, Search, ChevronLeft, MapPin, Building2, Mail } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export const Route = createFileRoute("/annuaire")({
-  component: AnnuaireePage,
+  component: AnnuairePage,
   head: () => ({
     meta: [
-      { title: "Annuaire des membres — Coopernic" },
-      { name: "description", content: "Explorez les membres de votre club et trouvez quelqu'un dans l'annuaire Coopernic inter-clubs." },
+      { title: "Annuaire — Coopernic" },
+      { name: "description", content: "Membres de ton club business, et si ton club est ouvert, du réseau Coopernic." },
     ],
   }),
 });
 
-type View = "grid" | "map";
+type MemberRow = {
+  id: string;
+  club_id: string | null;
+  first_name: string;
+  last_name: string;
+  role: string | null;
+  company: string | null;
+  sector: string | null;
+  city: string | null;
+  bio: string | null;
+  tags: string[] | null;
+};
+type ClubRow = {
+  id: string;
+  name: string;
+  city: string;
+  bio: string | null;
+  open_to_network: boolean;
+};
+
 type Scope = "club" | "network";
 
-function AnnuaireePage() {
-  const { session } = useAuth();
-  const myClub = session.clubId ? getClub(session.clubId) : null;
+function AnnuairePage() {
+  const session = useSession();
 
+  if (session.loading) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+  if (!session.user) return <Navigate to="/auth" />;
+
+  return <Inner userId={session.user.id} />;
+}
+
+function Inner({ userId }: { userId: string }) {
+  const meQ = useQuery({
+    queryKey: ["annuaire", "me", userId],
+    queryFn: async (): Promise<string | null> => {
+      const { data, error } = await supabase
+        .from("members")
+        .select("club_id")
+        .eq("id", userId)
+        .maybeSingle();
+      if (error) throw error;
+      return (data?.club_id as string | null) ?? null;
+    },
+  });
+  const userClubId = meQ.data ?? null;
+  const [scope, setScope] = useState<Scope>("club");
   const [query, setQuery] = useState("");
-  const [sector, setSector] = useState<string>("");
-  const [city, setCity] = useState<string>("");
-  const [view, setView] = useState<View>("grid");
+  const [selectedClubId, setSelectedClubId] = useState<string | null>(null);
 
-  // Règle : réciprocité. Un club privé ne voit pas le réseau et n'y figure pas.
-  const canSeeNetwork = !myClub || myClub.openToNetwork || session.role === "superadmin";
-  const [scope, setScope] = useState<Scope>(myClub ? "club" : "network");
+  // My club
+  const myClubQ = useQuery({
+    queryKey: ["annuaire", "myClub", userClubId],
+    enabled: !!userClubId,
+    queryFn: async (): Promise<ClubRow | null> => {
+      const { data, error } = await supabase
+        .from("clubs")
+        .select("id, name, city, bio, open_to_network")
+        .eq("id", userClubId!)
+        .maybeSingle();
+      if (error) throw error;
+      return (data as ClubRow) ?? null;
+    },
+  });
+  const myClub = myClubQ.data ?? null;
+  const canSeeNetwork = !!myClub?.open_to_network;
+
+  // Members (RLS scopes automatically). We fetch all we can see, then filter client-side by scope.
+  const membersQ = useQuery({
+    queryKey: ["annuaire", "members", scope, canSeeNetwork],
+    queryFn: async (): Promise<MemberRow[]> => {
+      const { data, error } = await supabase
+        .from("members")
+        .select("id, club_id, first_name, last_name, role, company, sector, city, bio, tags")
+        .order("first_name");
+      if (error) throw error;
+      return (data ?? []) as MemberRow[];
+    },
+  });
+  const allMembers = membersQ.data ?? [];
+
+  // Other clubs (for network browsing)
+  const otherClubsQ = useQuery({
+    queryKey: ["annuaire", "otherClubs"],
+    enabled: scope === "network" && canSeeNetwork,
+    queryFn: async (): Promise<ClubRow[]> => {
+      const { data, error } = await supabase
+        .from("clubs")
+        .select("id, name, city, bio, open_to_network")
+        .eq("open_to_network", true)
+        .order("name");
+      if (error) throw error;
+      return ((data ?? []) as ClubRow[]).filter((c) => c.id !== userClubId);
+    },
+  });
+
   const effectiveScope: Scope = scope === "network" && !canSeeNetwork ? "club" : scope;
 
-  const base = useMemo<Member[]>(() => {
-    if (effectiveScope === "club" && myClub) {
-      return membersOfClub(myClub.name);
-    }
-    // Réseau : tous les membres dont le club a opté pour l'annuaire global
-    const net = networkMembers();
-    // si l'utilisateur a un club, inclure aussi ses propres membres
-    if (myClub) {
-      const own = membersOfClub(myClub.name);
-      const seen = new Set(net.map((m) => m.id));
-      return [...own.filter((m) => !seen.has(m.id)), ...net];
-    }
-    return effectiveScope === "network" ? net : allMembers();
-  }, [effectiveScope, myClub?.id, myClub?.openToNetwork]);
-
   const filtered = useMemo(() => {
+    let base = allMembers;
+    if (effectiveScope === "club") {
+      base = myClub ? allMembers.filter((m) => m.club_id === myClub.id) : [];
+    } else if (selectedClubId) {
+      base = allMembers.filter((m) => m.club_id === selectedClubId);
+    } else {
+      base = myClub ? allMembers.filter((m) => m.club_id !== myClub.id) : allMembers;
+    }
     const q = query.trim().toLowerCase();
+    if (!q) return base;
     return base.filter((m) => {
-      if (sector && m.sector !== sector) return false;
-      if (city && m.city !== city) return false;
-      if (!q) return true;
       return (
-        `${m.firstName} ${m.lastName}`.toLowerCase().includes(q) ||
-        m.company.toLowerCase().includes(q) ||
-        m.role.toLowerCase().includes(q) ||
-        m.club.toLowerCase().includes(q) ||
-        m.tags.some((t) => t.toLowerCase().includes(q))
+        `${m.first_name} ${m.last_name}`.toLowerCase().includes(q) ||
+        (m.company ?? "").toLowerCase().includes(q) ||
+        (m.role ?? "").toLowerCase().includes(q) ||
+        (m.sector ?? "").toLowerCase().includes(q) ||
+        (m.city ?? "").toLowerCase().includes(q) ||
+        (m.tags ?? []).some((t) => t.toLowerCase().includes(q))
       );
     });
-  }, [base, query, sector, city]);
+  }, [allMembers, effectiveScope, selectedClubId, query, myClub?.id]);
 
-  const reset = () => { setQuery(""); setSector(""); setCity(""); };
-  const hasFilters = query || sector || city;
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-  const openClubsCount = mounted ? listClubs().filter((c) => c.openToNetwork).length : 0;
-
-  if (!mounted) {
-    return <div className="mx-auto max-w-7xl px-6 py-12" />;
-  }
+  const selectedClub = otherClubsQ.data?.find((c) => c.id === selectedClubId) ?? null;
 
   return (
-
-    <div className="mx-auto max-w-7xl px-6 py-12">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <div className="text-xs font-bold uppercase tracking-[0.2em] text-accent">Annuaire</div>
-          <h1 className="mt-2 font-display text-4xl font-extrabold tracking-tight text-foreground md:text-5xl">
-            {effectiveScope === "club" && myClub
-              ? `${filtered.length} membre${filtered.length > 1 ? "s" : ""} dans ${myClub.name}`
-              : `Trouver quelqu'un dans l'annuaire Coopernic`}
-          </h1>
-          <p className="mt-2 max-w-2xl text-ink-muted">
-            {effectiveScope === "club"
-              ? "Cherchez par nom, entreprise, secteur ou expertise au sein de votre club."
-              : `Découvrez les membres des ${openClubsCount} club${openClubsCount > 1 ? "s" : ""} ouverts au réseau Coopernic.`}
+    <div className="mx-auto max-w-6xl space-y-6 px-5 py-8 md:px-6 md:py-10">
+      {/* Header */}
+      <div>
+        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">Annuaire</div>
+        <h1 className="mt-1 font-display text-3xl font-bold text-foreground md:text-4xl">
+          {effectiveScope === "club" && myClub
+            ? myClub.name
+            : selectedClub
+            ? selectedClub.name
+            : "Réseau Coopernic"}
+        </h1>
+        {effectiveScope === "club" && myClub && (
+          <p className="mt-1 text-muted-foreground">
+            <span className="inline-flex items-center gap-1">
+              <MapPin className="h-3.5 w-3.5" /> {myClub.city}
+            </span>
+            {" · "}
+            {filtered.length} membre{filtered.length > 1 ? "s" : ""}
           </p>
-        </div>
-
-        <div className="flex rounded-xl border border-border bg-surface p-1 shadow-card">
-          {(["grid", "map"] as View[]).map((v) => (
-            <button
-              key={v}
-              onClick={() => setView(v)}
-              className={
-                "rounded-lg px-4 py-2 text-sm font-semibold transition-colors " +
-                (view === v
-                  ? "bg-primary text-primary-foreground"
-                  : "text-ink-muted hover:text-foreground")
-              }
-            >
-              {v === "grid" ? "Liste" : "Carte"}
-            </button>
-          ))}
-        </div>
+        )}
+        {effectiveScope === "club" && myClub?.bio && (
+          <p className="mt-3 max-w-2xl whitespace-pre-line rounded-xl border border-border/60 bg-secondary/30 p-3 text-sm text-foreground">
+            {myClub.bio}
+          </p>
+        )}
       </div>
 
       {/* Scope switch */}
-      <div className="mt-6 flex flex-wrap items-center gap-3">
-        <div className="inline-flex rounded-xl border border-border bg-surface p-1 shadow-card">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="inline-flex rounded-xl border border-border bg-card p-1">
           {myClub && (
             <ScopeBtn
               active={effectiveScope === "club"}
-              onClick={() => setScope("club")}
+              onClick={() => {
+                setScope("club");
+                setSelectedClubId(null);
+              }}
               icon={<Users className="h-4 w-4" />}
-              label={`Mon club · ${myClub.name}`}
+              label={`Mon club`}
             />
           )}
           <ScopeBtn
@@ -132,97 +192,206 @@ function AnnuaireePage() {
             disabled={!canSeeNetwork}
             onClick={() => canSeeNetwork && setScope("network")}
             icon={canSeeNetwork ? <Globe2 className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
-            label="Réseau Coopernic"
-            badge={canSeeNetwork ? `${openClubsCount} clubs` : undefined}
+            label="Voir les autres clubs"
           />
         </div>
-        {!canSeeNetwork && myClub && (
-          <p className="text-xs text-ink-muted">
-            Club privé : pour voir les autres membres du réseau, active l'annuaire inter-clubs depuis{" "}
-            <Link to="/club" className="font-semibold text-accent underline">la page de ton club</Link>.
-            La visibilité est réciproque.
-          </p>
-        )}
       </div>
 
-      {/* Filters */}
-      <div className="mt-6 grid gap-3 rounded-2xl border border-border bg-surface p-4 shadow-card md:grid-cols-[1fr_auto_auto_auto]">
-        <div className="relative">
-          <input
-            type="search"
-            placeholder="Rechercher un membre, une entreprise, un club, une compétence…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="w-full rounded-xl border border-input bg-background px-4 py-3 pl-11 text-sm text-foreground outline-none ring-ring/50 placeholder:text-muted-foreground focus:ring-2"
-          />
-          <svg className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
-        </div>
+      {!canSeeNetwork && myClub && (
+        <p className="text-xs text-muted-foreground">
+          Ton club est privé. Pour voir les membres du réseau Coopernic, le gestionnaire doit ouvrir
+          l'annuaire inter-clubs depuis <Link to="/club" className="font-semibold text-accent underline">la page du club</Link>.
+          La visibilité est réciproque.
+        </p>
+      )}
 
-        <select
-          value={sector}
-          onChange={(e) => setSector(e.target.value)}
-          className="rounded-xl border border-input bg-background px-4 py-3 text-sm font-medium text-foreground outline-none focus:ring-2 focus:ring-ring/50"
-        >
-          <option value="">Tous secteurs</option>
-          {SECTORS.map((s) => <option key={s} value={s}>{s}</option>)}
-        </select>
+      {/* Network — club selection */}
+      {effectiveScope === "network" && canSeeNetwork && !selectedClubId && (
+        <section className="space-y-3">
+          <h2 className="font-display text-lg font-semibold text-foreground">
+            Clubs ouverts au réseau
+          </h2>
+          {otherClubsQ.isLoading ? (
+            <div className="rounded-xl border border-border/60 bg-card p-6 text-center text-sm text-muted-foreground">
+              Chargement des clubs…
+            </div>
+          ) : (otherClubsQ.data?.length ?? 0) === 0 ? (
+            <div className="rounded-xl border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">
+              Aucun autre club n'est actuellement ouvert au réseau.
+            </div>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {otherClubsQ.data!.map((c) => {
+                const count = allMembers.filter((m) => m.club_id === c.id).length;
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => setSelectedClubId(c.id)}
+                    className="group flex flex-col gap-2 rounded-2xl border border-border bg-card p-4 text-left transition-all hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-card"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/15 text-accent">
+                        <Building2 className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate font-display text-base font-bold text-foreground">
+                          {c.name}
+                        </div>
+                        <div className="truncate text-xs text-muted-foreground">
+                          {c.city} · {count} membre{count > 1 ? "s" : ""}
+                        </div>
+                      </div>
+                    </div>
+                    {c.bio && (
+                      <p className="line-clamp-3 text-xs text-ink-muted">{c.bio}</p>
+                    )}
+                    <span className="mt-auto text-xs font-semibold text-accent opacity-0 transition-opacity group-hover:opacity-100">
+                      Voir les membres →
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
 
-        <select
-          value={city}
-          onChange={(e) => setCity(e.target.value)}
-          className="rounded-xl border border-input bg-background px-4 py-3 text-sm font-medium text-foreground outline-none focus:ring-2 focus:ring-ring/50"
-        >
-          <option value="">Toutes villes</option>
-          {CITIES.map((c) => <option key={c} value={c}>{c}</option>)}
-        </select>
+      {/* Members grid (club or selected external club) */}
+      {(effectiveScope === "club" || selectedClubId) && (
+        <>
+          {selectedClub && (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedClubId(null)}
+                className="gap-1"
+              >
+                <ChevronLeft className="h-4 w-4" /> Retour aux clubs
+              </Button>
+              <div className="text-sm text-muted-foreground">
+                {selectedClub.city} · {filtered.length} membre{filtered.length > 1 ? "s" : ""}
+              </div>
+            </div>
+          )}
 
-        <button
-          onClick={reset}
-          disabled={!hasFilters}
-          className="rounded-xl border border-border px-4 py-3 text-sm font-semibold text-ink-muted transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          Réinitialiser
-        </button>
-      </div>
+          {selectedClub?.bio && (
+            <p className="max-w-2xl whitespace-pre-line rounded-xl border border-border/60 bg-secondary/30 p-3 text-sm text-foreground">
+              {selectedClub.bio}
+            </p>
+          )}
 
-      <div className="mt-4 text-sm text-muted-foreground">
-        <span className="font-semibold text-foreground">{filtered.length}</span> résultat{filtered.length > 1 ? "s" : ""}
-      </div>
-
-      {view === "grid" ? (
-        filtered.length === 0 ? (
-          <div className="mt-10 rounded-2xl border border-dashed border-border bg-surface p-16 text-center">
-            <div className="font-display text-lg font-semibold text-foreground">Aucun membre trouvé</div>
-            <p className="mt-1 text-sm text-muted-foreground">Essayez d'élargir vos filtres.</p>
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Rechercher un nom, société, expertise…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="pl-9"
+            />
           </div>
-        ) : (
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((m) => (
-              <MemberCard
-                key={m.id}
-                member={m}
-                clubBadge={effectiveScope === "network" ? m.club : undefined}
-                isExternal={effectiveScope === "network" && (!myClub || m.club !== myClub.name)}
-              />
-            ))}
-          </div>
-        )
-      ) : (
-        <MapView members={filtered} />
+
+          {membersQ.isLoading ? (
+            <div className="flex justify-center py-10">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-border bg-card p-10 text-center">
+              <div className="font-display text-lg font-semibold text-foreground">
+                Aucun membre trouvé
+              </div>
+              <p className="mt-1 text-sm text-muted-foreground">Essaie une autre recherche.</p>
+            </div>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {filtered.map((m) => (
+                <MemberCardReal key={m.id} member={m} />
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
 }
 
+function initialsFrom(f: string, l: string) {
+  return `${(f[0] ?? "").toUpperCase()}${(l[0] ?? "").toUpperCase()}` || "??";
+}
+
+function MemberCardReal({ member }: { member: MemberRow }) {
+  return (
+    <Link
+      to="/membres/$id"
+      params={{ id: member.id }}
+      className="group flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-card"
+    >
+      <div className="flex items-start gap-3">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary font-display text-sm font-bold text-primary-foreground">
+          {initialsFrom(member.first_name, member.last_name)}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="truncate font-display text-base font-bold text-foreground">
+            {member.first_name} {member.last_name}
+          </div>
+          {member.role && (
+            <div className="truncate text-sm text-ink-muted">{member.role}</div>
+          )}
+          {member.company && (
+            <div className="truncate text-xs font-medium text-accent">{member.company}</div>
+          )}
+        </div>
+      </div>
+
+      {member.bio && (
+        <p className="line-clamp-2 text-sm leading-relaxed text-ink-muted">{member.bio}</p>
+      )}
+
+      {(member.tags?.length ?? 0) > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {member.tags!.slice(0, 3).map((t) => (
+            <span
+              key={t}
+              className="rounded-md bg-secondary px-2 py-0.5 text-[11px] font-semibold text-foreground"
+            >
+              {t}
+            </span>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-auto flex items-center justify-between border-t border-border/60 pt-2 text-xs text-muted-foreground">
+        <span className="inline-flex items-center gap-1">
+          <MapPin className="h-3 w-3" />
+          {member.city ?? "—"}
+        </span>
+        <span className="inline-flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+          <Mail className="h-3 w-3" /> Voir la fiche →
+        </span>
+      </div>
+    </Link>
+  );
+}
+
 function ScopeBtn({
-  active, onClick, icon, label, badge, disabled,
-}: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string; badge?: string; disabled?: boolean }) {
+  active,
+  onClick,
+  icon,
+  label,
+  disabled,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+  disabled?: boolean;
+}) {
   return (
     <button
       onClick={onClick}
       disabled={disabled}
       className={
-        "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors " +
+        "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-colors " +
         (disabled
           ? "cursor-not-allowed text-muted-foreground opacity-60"
           : active
@@ -232,94 +401,6 @@ function ScopeBtn({
     >
       {icon}
       <span>{label}</span>
-      {badge && (
-        <span className={
-          "rounded-full px-1.5 py-0.5 text-[10px] font-bold " +
-          (active ? "bg-accent-foreground/20" : "bg-secondary text-foreground")
-        }>{badge}</span>
-      )}
     </button>
-  );
-}
-
-function MapView({ members }: { members: Member[] }) {
-  const [hover, setHover] = useState<string | null>(null);
-
-  return (
-    <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_360px]">
-      <div className="relative overflow-hidden rounded-3xl border border-border bg-primary p-6 shadow-elevated">
-        <div className="absolute inset-0" />
-        <div className="relative aspect-[4/5] w-full md:aspect-[5/4]">
-          <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full">
-            <path
-              d="M30,15 Q40,8 52,12 L70,10 Q82,18 85,28 L88,42 Q86,55 80,68 L72,82 Q60,90 50,88 L38,90 Q26,86 22,75 L18,60 Q15,48 18,35 Q22,22 30,15 Z"
-              fill="oklch(1 0 0 / 0.06)"
-              stroke="oklch(1 0 0 / 0.18)"
-              strokeWidth="0.4"
-            />
-          </svg>
-
-          {members.map((m) => (
-            <button
-              key={m.id}
-              onMouseEnter={() => setHover(m.id)}
-              onMouseLeave={() => setHover(null)}
-              style={{ left: `${m.coords.x}%`, top: `${m.coords.y}%` }}
-              className="group absolute -translate-x-1/2 -translate-y-1/2"
-            >
-              <span className="relative flex h-3.5 w-3.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-60" />
-                <span className="relative inline-flex h-3.5 w-3.5 rounded-full border-2 border-white bg-accent shadow-lg" />
-              </span>
-              {hover === m.id && (
-                <span className="absolute left-1/2 top-5 z-10 w-44 -translate-x-1/2 rounded-lg bg-white p-2.5 text-left shadow-elevated">
-                  <span className="block font-display text-xs font-bold text-primary">
-                    {m.firstName} {m.lastName}
-                  </span>
-                  <span className="block text-[11px] text-ink-muted">{m.company}</span>
-                  <span className="block text-[10px] font-semibold uppercase tracking-wider text-accent">
-                    {m.city} · {m.club}
-                  </span>
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-        <div className="relative mt-4 flex items-center justify-between text-xs text-white/70">
-          <span>{members.length} membres géolocalisés</span>
-          <span className="inline-flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-accent" />
-            Cliquez sur une épingle
-          </span>
-        </div>
-      </div>
-
-      <div className="rounded-3xl border border-border bg-surface p-5 shadow-card">
-        <h3 className="font-display text-lg font-bold text-foreground">Membres sur la carte</h3>
-        <ul className="mt-4 max-h-[520px] space-y-2 overflow-y-auto pr-1">
-          {members.map((m) => (
-            <li key={m.id}>
-              <Link
-                to="/membres/$id"
-                params={{ id: m.id }}
-                onMouseEnter={() => setHover(m.id)}
-                onMouseLeave={() => setHover(null)}
-                className="flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-secondary"
-              >
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-xs font-bold text-primary-foreground">
-                  {m.initials}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-semibold text-foreground">
-                    {m.firstName} {m.lastName}
-                  </div>
-                  <div className="truncate text-xs text-ink-muted">{m.club} · {m.city}</div>
-                </div>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
   );
 }
