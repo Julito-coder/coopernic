@@ -275,6 +275,8 @@ const UpdateSchema = z.object({
       isPaid: z.boolean().optional(),
       priceEuros: z.number().min(0).max(100000).nullable().optional(),
       attendanceRequired: z.boolean().optional(),
+      notifyOnCreate: z.boolean().optional(),
+      remindNonResponders: z.boolean().optional(),
     })
     .refine((v) => Object.keys(v).length > 0, "Aucun changement"),
 });
