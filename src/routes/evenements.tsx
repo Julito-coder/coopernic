@@ -530,6 +530,8 @@ function CreateEventDialog({
   const [isPaid, setIsPaid] = useState(false);
   const [priceEuros, setPriceEuros] = useState("");
   const [attendanceRequired, setAttendanceRequired] = useState(false);
+  const [notifyOnCreate, setNotifyOnCreate] = useState(true);
+  const [remindNonResponders, setRemindNonResponders] = useState(true);
   // Recurrence
   const [isRecurring, setIsRecurring] = useState(false);
   const [freq, setFreq] = useState<"WEEKLY" | "MONTHLY" | "DAILY">("WEEKLY");
