@@ -532,6 +532,31 @@ function AddMemberForm({ clubId, clubName }: { clubId: string; clubName: string 
   const changeRole = useServerFn(setMemberRole);
   const setPerms = useServerFn(setUserModulePermissions);
 
+  // ---- Cotisation section ----
+  const listPlansFn = useServerFn(listCotisationPlans);
+  const createPlanFn = useServerFn(createCotisationPlan);
+  const assignCotisFn = useServerFn(assignCotisationToMember);
+  const plansQ = useQuery({
+    queryKey: ["cotis-plans", clubId],
+    queryFn: () => listPlansFn({ data: { clubId } }),
+  });
+  const plans = plansQ.data?.plans ?? [];
+  const [planId, setPlanId] = useState<string>(""); // "" = aucune
+  const [customAmount, setCustomAmount] = useState<string>("");
+  const [startDate, setStartDate] = useState<string>(
+    () => new Date().toISOString().slice(0, 10),
+  );
+  const [dueDate, setDueDate] = useState<string>("");
+  const [alreadyPaid, setAlreadyPaid] = useState<boolean>(false);
+  // Inline new plan creation
+  const [showNewPlan, setShowNewPlan] = useState(false);
+  const [npName, setNpName] = useState("");
+  const [npAmount, setNpAmount] = useState("");
+  const [npInterval, setNpInterval] = useState<"monthly" | "quarterly" | "yearly">(
+    "yearly",
+  );
+  const [npDuration, setNpDuration] = useState<string>("");
+
   function toggleRespModule(key: ModuleKey, on: boolean) {
     setRespModules((prev) => {
       const next = new Set(prev);
