@@ -759,8 +759,8 @@ const MODULE_META: Record<ModuleKey, { label: string; description: string }> = {
     description: "Création d'évènements, sondages de présence.",
   },
   cagnottes: {
-    label: "Cagnottes",
-    description: "Cagnottes partagées avec paiements Stripe.",
+    label: "Paiements",
+    description: "Paiements partagés (liés ou non à un évènement), encaissés via Stripe.",
   },
   cotisations: {
     label: "Cotisations",

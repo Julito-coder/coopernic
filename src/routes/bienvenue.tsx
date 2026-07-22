@@ -42,9 +42,9 @@ const SLIDES = [
   },
   {
     Icon: Wallet,
-    kicker: "Cagnottes",
+    kicker: "Paiements",
     title: "Participez en un clic.",
-    body: "Financement d'évènements et cotisations : votre part calculée automatiquement, paiement en ligne.",
+    body: "Paiements partagés, liés ou non à un évènement : votre part calculée automatiquement, réglée en ligne.",
   },
   {
     Icon: BarChart3,

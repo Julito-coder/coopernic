@@ -786,8 +786,8 @@ function CreateEventDialog({
             )}
             {isPaid && !attendanceRequired && (
               <p className="text-xs text-muted-foreground">
-                Après création, une cagnotte pourra être liée à cet évènement pour encaisser les
-                paiements.
+                Après création, un paiement pourra être lié à cet évènement pour encaisser les
+                participations.
               </p>
             )}
           </div>

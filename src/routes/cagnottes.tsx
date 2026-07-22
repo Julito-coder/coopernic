@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/cagnottes")({
   component: CagnottesPage,
-  head: () => ({ meta: [{ title: "Cagnottes du club" }] }),
+  head: () => ({ meta: [{ title: "Paiements du club" }] }),
 });
 
 function euros(cents: number) {
@@ -69,10 +69,10 @@ function CagnottesPage() {
     <div className="min-h-screen bg-background">
       <PaymentTestModeBanner />
       <div className="max-w-4xl mx-auto p-6 space-y-6">
-        <h1 className="text-3xl font-bold">Cagnottes du club</h1>
+        <h1 className="text-3xl font-bold">Paiements du club</h1>
 
         {pots.length === 0 && (
-          <p className="text-muted-foreground">Aucune cagnotte en cours.</p>
+          <p className="text-muted-foreground">Aucun paiement en cours.</p>
         )}
 
         <div className="space-y-4">
