@@ -440,6 +440,8 @@ function CreateEventDialog({
                 </div>
               </div>
             )}
+          </div>
+
           <Field label="Lieu (nom)">
             <input
               value={locationName}
