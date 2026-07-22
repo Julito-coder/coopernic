@@ -26,6 +26,8 @@ import {
   BarChart3,
   Building2,
   Shield,
+  Map as MapIcon,
+  UserCircle,
 } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 
@@ -46,6 +48,8 @@ const NAV: NavItem[] = [
   { to: "/messages", label: "Messages", short: "Messages", icon: MessageSquare, roles: ["superadmin", "gestionnaire", "membre"], primary: true },
   { to: "/cagnottes", label: "Cagnottes", short: "Cagnottes", icon: Wallet, roles: ["superadmin", "gestionnaire", "membre"], primary: true },
   { to: "/evenements", label: "Évènements", short: "Events", icon: CalendarDays, roles: ["superadmin", "gestionnaire", "membre"], primary: true },
+  { to: "/carte", label: "Carte", short: "Carte", icon: MapIcon, roles: ["superadmin", "gestionnaire", "membre"], primary: false },
+  { to: "/mon-profil", label: "Mon profil", short: "Profil", icon: UserCircle, roles: ["superadmin", "gestionnaire", "membre"], primary: false },
   { to: "/recos", label: "Stats", short: "Stats", icon: BarChart3, roles: ["superadmin", "gestionnaire", "membre"], primary: false },
   { to: "/club", label: "Mon club", short: "Club", icon: Building2, roles: ["superadmin", "gestionnaire"], primary: false },
   { to: "/admin", label: "Super Admin", short: "Admin", icon: Shield, roles: ["superadmin"], primary: false },

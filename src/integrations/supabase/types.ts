@@ -174,9 +174,13 @@ export type Database = {
           invited_at: string | null
           last_name: string
           looking_for: string[] | null
+          office_address: string | null
+          office_lat: number | null
+          office_lng: number | null
           phone: string | null
           role: string | null
           sector: string | null
+          share_office_location: boolean
           tags: string[] | null
           updated_at: string
         }
@@ -194,9 +198,13 @@ export type Database = {
           invited_at?: string | null
           last_name: string
           looking_for?: string[] | null
+          office_address?: string | null
+          office_lat?: number | null
+          office_lng?: number | null
           phone?: string | null
           role?: string | null
           sector?: string | null
+          share_office_location?: boolean
           tags?: string[] | null
           updated_at?: string
         }
@@ -214,9 +222,13 @@ export type Database = {
           invited_at?: string | null
           last_name?: string
           looking_for?: string[] | null
+          office_address?: string | null
+          office_lat?: number | null
+          office_lng?: number | null
           phone?: string | null
           role?: string | null
           sector?: string | null
+          share_office_location?: boolean
           tags?: string[] | null
           updated_at?: string
         }
