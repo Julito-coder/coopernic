@@ -11,6 +11,13 @@ import {
   removeMemberFromClub,
   setMemberRole,
 } from "@/lib/members.functions";
+import {
+  ALL_MODULES,
+  type ModuleKey,
+  createClubAsGestionnaire,
+  updateClubModules,
+} from "@/lib/clubs.functions";
+import { Checkbox } from "@/components/ui/checkbox";
 import { SECTORS, CITIES } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,6 +63,7 @@ type ClubRow = {
   city: string;
   gestionnaire_id: string | null;
   open_to_network: boolean;
+  modules: string[] | null;
 };
 type MemberRow = {
   id: string;
@@ -98,21 +106,18 @@ function ClubPage() {
 
   const clubId = search.id ?? session.managedClubId ?? "";
   if (!clubId) {
+    if (isGest && !isSuper) {
+      return <CreateClubForm />;
+    }
     return (
       <div className="mx-auto max-w-3xl px-6 py-16 text-center">
         <h1 className="font-display text-2xl font-bold">Aucun club sélectionné</h1>
         <p className="mt-2 text-muted-foreground">
-          {isSuper ? (
-            <>
-              Va dans{" "}
-              <Link to="/admin" className="text-accent underline">
-                Super Admin
-              </Link>{" "}
-              pour en choisir un.
-            </>
-          ) : (
-            "Aucun club n'est rattaché à ton compte."
-          )}
+          Va dans{" "}
+          <Link to="/admin" className="text-accent underline">
+            Super Admin
+          </Link>{" "}
+          pour en choisir un.
         </p>
       </div>
     );
@@ -129,7 +134,7 @@ function ClubInner({ clubId, isSuper }: { clubId: string; isSuper: boolean }) {
     queryFn: async (): Promise<ClubRow | null> => {
       const { data, error } = await supabase
         .from("clubs")
-        .select("id, name, city, gestionnaire_id, open_to_network")
+        .select("id, name, city, gestionnaire_id, open_to_network, modules")
         .eq("id", clubId)
         .maybeSingle();
       if (error) throw error;
@@ -247,6 +252,9 @@ function ClubInner({ clubId, isSuper }: { clubId: string; isSuper: boolean }) {
           </div>
         </CardHeader>
       </Card>
+
+      <ClubModulesCard club={club} />
+
 
       <AddMemberForm clubId={club.id} clubName={club.name} />
 
@@ -572,5 +580,229 @@ function AddMemberForm({ clubId, clubName }: { clubId: string; clubName: string 
         </form>
       </CardContent>
     </Card>
+  );
+}
+
+const MODULE_META: Record<ModuleKey, { label: string; description: string }> = {
+  annuaire: {
+    label: "Annuaire",
+    description: "Fiches des membres du club, recherche et filtres.",
+  },
+  messages: {
+    label: "Messagerie",
+    description: "Conversations 1-to-1 entre membres.",
+  },
+  evenements: {
+    label: "Évènements",
+    description: "Création d'évènements, sondages de présence.",
+  },
+  cagnottes: {
+    label: "Cagnottes",
+    description: "Cagnottes partagées avec paiements Stripe.",
+  },
+  carte: {
+    label: "Carte",
+    description: "Géolocalisation des membres et proposition de café.",
+  },
+  recos: {
+    label: "Stats & Recos",
+    description: "Suivi des recommandations et statistiques business.",
+  },
+};
+
+function ClubModulesCard({ club }: { club: ClubRow }) {
+  const qc = useQueryClient();
+  const update = useServerFn(updateClubModules);
+  const current = new Set<ModuleKey>(
+    ((club.modules ?? ALL_MODULES) as ModuleKey[]).filter((m) =>
+      (ALL_MODULES as readonly string[]).includes(m),
+    ),
+  );
+  const [selected, setSelected] = useState<Set<ModuleKey>>(current);
+  const [saving, setSaving] = useState(false);
+
+  const dirty =
+    selected.size !== current.size ||
+    [...selected].some((m) => !current.has(m));
+
+  function toggle(key: ModuleKey, on: boolean) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(key);
+      else next.delete(key);
+      return next;
+    });
+  }
+
+  async function save() {
+    if (selected.size === 0) {
+      toast.error("Sélectionne au moins un module.");
+      return;
+    }
+    setSaving(true);
+    try {
+      await update({ data: { clubId: club.id, modules: [...selected] } });
+      toast.success("Modules mis à jour.");
+      qc.invalidateQueries({ queryKey: ["club", club.id] });
+      qc.invalidateQueries({ queryKey: ["user-modules"] });
+    } catch (e: any) {
+      toast.error(e.message ?? "Erreur");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="font-display">Modules activés</CardTitle>
+        <CardDescription>
+          Coche les outils disponibles pour les membres de ton club. Tu peux en ajouter
+          ou en retirer à tout moment.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="grid gap-2 sm:grid-cols-2">
+          {ALL_MODULES.map((key) => {
+            const meta = MODULE_META[key];
+            const checked = selected.has(key);
+            return (
+              <label
+                key={key}
+                className="flex cursor-pointer items-start gap-3 rounded-lg border border-border/60 p-3 hover:bg-secondary/40"
+              >
+                <Checkbox
+                  checked={checked}
+                  onCheckedChange={(v) => toggle(key, v === true)}
+                />
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold">{meta.label}</div>
+                  <div className="text-xs text-muted-foreground">{meta.description}</div>
+                </div>
+              </label>
+            );
+          })}
+        </div>
+        <div className="flex justify-end">
+          <Button onClick={save} disabled={!dirty || saving}>
+            {saving ? "Enregistrement…" : "Enregistrer"}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function CreateClubForm() {
+  const qc = useQueryClient();
+  const create = useServerFn(createClubAsGestionnaire);
+  const [name, setName] = useState("");
+  const [city, setCity] = useState("");
+  const [modules, setModules] = useState<Set<ModuleKey>>(new Set(ALL_MODULES));
+  const [loading, setLoading] = useState(false);
+
+  function toggle(key: ModuleKey, on: boolean) {
+    setModules((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(key);
+      else next.delete(key);
+      return next;
+    });
+  }
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim() || !city.trim()) {
+      toast.error("Nom et ville sont requis.");
+      return;
+    }
+    if (modules.size === 0) {
+      toast.error("Sélectionne au moins un module.");
+      return;
+    }
+    setLoading(true);
+    try {
+      await create({
+        data: { name: name.trim(), city: city.trim(), modules: [...modules] },
+      });
+      toast.success("Club créé !");
+      qc.invalidateQueries();
+      window.location.reload();
+    } catch (e: any) {
+      toast.error(e.message ?? "Erreur");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="mx-auto max-w-3xl space-y-6 px-6 py-10">
+      <header>
+        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">
+          Bienvenue
+        </div>
+        <h1 className="mt-1 font-display text-3xl font-bold text-foreground">
+          Crée ton club business
+        </h1>
+        <p className="mt-1 text-muted-foreground">
+          Donne un nom à ton groupe, choisis les modules et invite tes membres ensuite.
+        </p>
+      </header>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="font-display">Informations du club</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form className="space-y-4" onSubmit={submit}>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Input
+                placeholder="Nom du club"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+              <Input
+                placeholder="Ville"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <div className="mb-2 text-sm font-semibold">Modules à activer</div>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {ALL_MODULES.map((key) => {
+                  const meta = MODULE_META[key];
+                  const checked = modules.has(key);
+                  return (
+                    <label
+                      key={key}
+                      className="flex cursor-pointer items-start gap-3 rounded-lg border border-border/60 p-3 hover:bg-secondary/40"
+                    >
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={(v) => toggle(key, v === true)}
+                      />
+                      <div className="min-w-0">
+                        <div className="text-sm font-semibold">{meta.label}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {meta.description}
+                        </div>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex justify-end">
+              <Button type="submit" disabled={loading}>
+                {loading ? "Création…" : "Créer mon club"}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
