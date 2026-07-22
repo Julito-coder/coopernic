@@ -774,6 +774,10 @@ const MODULE_META: Record<ModuleKey, { label: string; description: string }> = {
     label: "Stats & Recos",
     description: "Suivi des recommandations et statistiques business.",
   },
+  commissions: {
+    label: "Commissions",
+    description: "Active le commissionnement pour apport d'affaires : taux, calcul auto et génération de facture.",
+  },
 };
 
 function ClubModulesCard({ club }: { club: ClubRow }) {

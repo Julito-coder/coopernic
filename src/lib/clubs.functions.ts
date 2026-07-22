@@ -10,6 +10,7 @@ export const ALL_MODULES = [
   "cotisations",
   "carte",
   "recos",
+  "commissions",
 ] as const;
 
 export type ModuleKey = (typeof ALL_MODULES)[number];
