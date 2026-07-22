@@ -285,12 +285,14 @@ export type Database = {
           location_lng: number | null
           location_name: string | null
           notified_new_at: string | null
+          notify_on_create: boolean
           poll_options: Json
           poll_question: string | null
           poll_results_visible: boolean
           practical_info: string | null
           price_cents: number | null
           recurrence_parent_id: string | null
+          remind_non_responders: boolean
           reminder_sent_at: string | null
           rrule: string | null
           starts_at: string
@@ -312,12 +314,14 @@ export type Database = {
           location_lng?: number | null
           location_name?: string | null
           notified_new_at?: string | null
+          notify_on_create?: boolean
           poll_options?: Json
           poll_question?: string | null
           poll_results_visible?: boolean
           practical_info?: string | null
           price_cents?: number | null
           recurrence_parent_id?: string | null
+          remind_non_responders?: boolean
           reminder_sent_at?: string | null
           rrule?: string | null
           starts_at: string
@@ -339,12 +343,14 @@ export type Database = {
           location_lng?: number | null
           location_name?: string | null
           notified_new_at?: string | null
+          notify_on_create?: boolean
           poll_options?: Json
           poll_question?: string | null
           poll_results_visible?: boolean
           practical_info?: string | null
           price_cents?: number | null
           recurrence_parent_id?: string | null
+          remind_non_responders?: boolean
           reminder_sent_at?: string | null
           rrule?: string | null
           starts_at?: string

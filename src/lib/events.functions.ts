@@ -91,6 +91,8 @@ export const createEvent = createServerFn({ method: "POST" })
         isPaid: z.boolean().default(false),
         priceEuros: z.number().min(0).max(100000).optional().nullable(),
         attendanceRequired: z.boolean().default(false),
+        notifyOnCreate: z.boolean().default(true),
+        remindNonResponders: z.boolean().default(true),
         // Recurrence (iCal RRULE). If provided, we materialize up to 52 occurrences.
         rrule: z.string().max(500).optional().nullable(),
       })
@@ -136,6 +138,11 @@ export const createEvent = createServerFn({ method: "POST" })
       is_paid: data.isPaid,
       price_cents: data.isPaid && data.priceEuros ? Math.round(data.priceEuros * 100) : null,
       attendance_required: data.attendanceRequired,
+      notify_on_create: data.notifyOnCreate,
+      remind_non_responders: data.remindNonResponders,
+      // If notifications are disabled, mark as already-sent to skip cron dispatch
+      notified_new_at: data.notifyOnCreate ? null : new Date().toISOString(),
+      reminder_sent_at: data.remindNonResponders ? null : new Date().toISOString(),
     };
 
     const firstStart = occurrences[0];
@@ -268,6 +275,8 @@ const UpdateSchema = z.object({
       isPaid: z.boolean().optional(),
       priceEuros: z.number().min(0).max(100000).nullable().optional(),
       attendanceRequired: z.boolean().optional(),
+      notifyOnCreate: z.boolean().optional(),
+      remindNonResponders: z.boolean().optional(),
     })
     .refine((v) => Object.keys(v).length > 0, "Aucun changement"),
 });
@@ -293,6 +302,8 @@ export const updateEvent = createServerFn({ method: "POST" })
     if (p.priceEuros !== undefined)
       shared.price_cents = p.priceEuros == null ? null : Math.round(p.priceEuros * 100);
     if (p.attendanceRequired !== undefined) shared.attendance_required = p.attendanceRequired;
+    if (p.notifyOnCreate !== undefined) shared.notify_on_create = p.notifyOnCreate;
+    if (p.remindNonResponders !== undefined) shared.remind_non_responders = p.remindNonResponders;
 
     if (data.scope === "series") {
       const { data: ev } = await supabase
