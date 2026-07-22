@@ -181,22 +181,24 @@ function RecoRow({ reco, mode, commissionsEnabled }: { reco: Reco; mode: "sent" 
       <td className="px-4 py-3 font-mono text-xs text-foreground">
         {reco.estimatedAmount ? fmtEuro(reco.estimatedAmount) : "—"}
       </td>
-      <td className="px-4 py-3">
-        <input
-          type="number"
-          min={0}
-          max={100}
-          value={reco.commissionRate ?? ""}
-          onChange={(e) =>
-            updateReco(reco.id, {
-              commissionRate: e.target.value === "" ? undefined : Number(e.target.value),
-            })
-          }
-          className="w-16 rounded-md border border-input bg-background px-2 py-1 text-xs font-mono text-foreground outline-none focus:ring-2 focus:ring-ring/40"
-          placeholder="0"
-        />
-        <span className="ml-1 text-[11px] text-muted-foreground">%</span>
-      </td>
+      {commissionsEnabled && (
+        <td className="px-4 py-3">
+          <input
+            type="number"
+            min={0}
+            max={100}
+            value={reco.commissionRate ?? ""}
+            onChange={(e) =>
+              updateReco(reco.id, {
+                commissionRate: e.target.value === "" ? undefined : Number(e.target.value),
+              })
+            }
+            className="w-16 rounded-md border border-input bg-background px-2 py-1 text-xs font-mono text-foreground outline-none focus:ring-2 focus:ring-ring/40"
+            placeholder="0"
+          />
+          <span className="ml-1 text-[11px] text-muted-foreground">%</span>
+        </td>
+      )}
       <td className="px-4 py-3">
         <select
           value={reco.status}
@@ -211,13 +213,17 @@ function RecoRow({ reco, mode, commissionsEnabled }: { reco: Reco; mode: "sent" 
           ))}
         </select>
       </td>
-      <td className="px-4 py-3">
-        {mode === "received" ? (
-          <InvoiceCell reco={reco} commissionAmount={commissionAmount} canInvoice={canInvoice} />
-        ) : (
-          <span className="font-mono text-xs font-bold text-accent">
-            {commissionAmount > 0 ? fmtEuro(commissionAmount) : "—"}
-          </span>
+      {commissionsEnabled && (
+        <td className="px-4 py-3">
+          {mode === "received" ? (
+            <InvoiceCell reco={reco} commissionAmount={commissionAmount} canInvoice={canInvoice} />
+          ) : (
+            <span className="font-mono text-xs font-bold text-accent">
+              {commissionAmount > 0 ? fmtEuro(commissionAmount) : "—"}
+            </span>
+          )}
+        </td>
+      )}
         )}
       </td>
     </tr>
