@@ -13,6 +13,7 @@ import { Route as RecosRouteImport } from './routes/recos'
 import { Route as MonProfilRouteImport } from './routes/mon-profil'
 import { Route as MessagesRouteImport } from './routes/messages'
 import { Route as EvenementsRouteImport } from './routes/evenements'
+import { Route as CotisationsRouteImport } from './routes/cotisations'
 import { Route as ClubRouteImport } from './routes/club'
 import { Route as CarteRouteImport } from './routes/carte'
 import { Route as CagnottesRouteImport } from './routes/cagnottes'
@@ -25,6 +26,7 @@ import { Route as MembresIdRouteImport } from './routes/membres.$id'
 import { Route as CagnottesReturnRouteImport } from './routes/cagnottes.return'
 import { Route as AuthSetPasswordRouteImport } from './routes/auth.set-password'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
+import { Route as ApiPublicHooksCotisationRemindersRouteImport } from './routes/api/public/hooks/cotisation-reminders'
 
 const RecosRoute = RecosRouteImport.update({
   id: '/recos',
@@ -44,6 +46,11 @@ const MessagesRoute = MessagesRouteImport.update({
 const EvenementsRoute = EvenementsRouteImport.update({
   id: '/evenements',
   path: '/evenements',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CotisationsRoute = CotisationsRouteImport.update({
+  id: '/cotisations',
+  path: '/cotisations',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ClubRoute = ClubRouteImport.update({
@@ -107,6 +114,12 @@ const ApiPublicPaymentsWebhookRoute =
     path: '/api/public/payments/webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksCotisationRemindersRoute =
+  ApiPublicHooksCotisationRemindersRouteImport.update({
+    id: '/api/public/hooks/cotisation-reminders',
+    path: '/api/public/hooks/cotisation-reminders',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -116,6 +129,7 @@ export interface FileRoutesByFullPath {
   '/cagnottes': typeof CagnottesRouteWithChildren
   '/carte': typeof CarteRoute
   '/club': typeof ClubRoute
+  '/cotisations': typeof CotisationsRoute
   '/evenements': typeof EvenementsRoute
   '/messages': typeof MessagesRoute
   '/mon-profil': typeof MonProfilRoute
@@ -124,6 +138,7 @@ export interface FileRoutesByFullPath {
   '/cagnottes/return': typeof CagnottesReturnRoute
   '/membres/$id': typeof MembresIdRoute
   '/auth/': typeof AuthIndexRoute
+  '/api/public/hooks/cotisation-reminders': typeof ApiPublicHooksCotisationRemindersRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRoutesByTo {
@@ -134,6 +149,7 @@ export interface FileRoutesByTo {
   '/cagnottes': typeof CagnottesRouteWithChildren
   '/carte': typeof CarteRoute
   '/club': typeof ClubRoute
+  '/cotisations': typeof CotisationsRoute
   '/evenements': typeof EvenementsRoute
   '/messages': typeof MessagesRoute
   '/mon-profil': typeof MonProfilRoute
@@ -142,6 +158,7 @@ export interface FileRoutesByTo {
   '/cagnottes/return': typeof CagnottesReturnRoute
   '/membres/$id': typeof MembresIdRoute
   '/auth': typeof AuthIndexRoute
+  '/api/public/hooks/cotisation-reminders': typeof ApiPublicHooksCotisationRemindersRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRoutesById {
@@ -153,6 +170,7 @@ export interface FileRoutesById {
   '/cagnottes': typeof CagnottesRouteWithChildren
   '/carte': typeof CarteRoute
   '/club': typeof ClubRoute
+  '/cotisations': typeof CotisationsRoute
   '/evenements': typeof EvenementsRoute
   '/messages': typeof MessagesRoute
   '/mon-profil': typeof MonProfilRoute
@@ -161,6 +179,7 @@ export interface FileRoutesById {
   '/cagnottes/return': typeof CagnottesReturnRoute
   '/membres/$id': typeof MembresIdRoute
   '/auth/': typeof AuthIndexRoute
+  '/api/public/hooks/cotisation-reminders': typeof ApiPublicHooksCotisationRemindersRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRouteTypes {
@@ -173,6 +192,7 @@ export interface FileRouteTypes {
     | '/cagnottes'
     | '/carte'
     | '/club'
+    | '/cotisations'
     | '/evenements'
     | '/messages'
     | '/mon-profil'
@@ -181,6 +201,7 @@ export interface FileRouteTypes {
     | '/cagnottes/return'
     | '/membres/$id'
     | '/auth/'
+    | '/api/public/hooks/cotisation-reminders'
     | '/api/public/payments/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -191,6 +212,7 @@ export interface FileRouteTypes {
     | '/cagnottes'
     | '/carte'
     | '/club'
+    | '/cotisations'
     | '/evenements'
     | '/messages'
     | '/mon-profil'
@@ -199,6 +221,7 @@ export interface FileRouteTypes {
     | '/cagnottes/return'
     | '/membres/$id'
     | '/auth'
+    | '/api/public/hooks/cotisation-reminders'
     | '/api/public/payments/webhook'
   id:
     | '__root__'
@@ -209,6 +232,7 @@ export interface FileRouteTypes {
     | '/cagnottes'
     | '/carte'
     | '/club'
+    | '/cotisations'
     | '/evenements'
     | '/messages'
     | '/mon-profil'
@@ -217,6 +241,7 @@ export interface FileRouteTypes {
     | '/cagnottes/return'
     | '/membres/$id'
     | '/auth/'
+    | '/api/public/hooks/cotisation-reminders'
     | '/api/public/payments/webhook'
   fileRoutesById: FileRoutesById
 }
@@ -228,6 +253,7 @@ export interface RootRouteChildren {
   CagnottesRoute: typeof CagnottesRouteWithChildren
   CarteRoute: typeof CarteRoute
   ClubRoute: typeof ClubRoute
+  CotisationsRoute: typeof CotisationsRoute
   EvenementsRoute: typeof EvenementsRoute
   MessagesRoute: typeof MessagesRoute
   MonProfilRoute: typeof MonProfilRoute
@@ -235,6 +261,7 @@ export interface RootRouteChildren {
   AuthSetPasswordRoute: typeof AuthSetPasswordRoute
   MembresIdRoute: typeof MembresIdRoute
   AuthIndexRoute: typeof AuthIndexRoute
+  ApiPublicHooksCotisationRemindersRoute: typeof ApiPublicHooksCotisationRemindersRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
 }
 
@@ -266,6 +293,13 @@ declare module '@tanstack/react-router' {
       path: '/evenements'
       fullPath: '/evenements'
       preLoaderRoute: typeof EvenementsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cotisations': {
+      id: '/cotisations'
+      path: '/cotisations'
+      fullPath: '/cotisations'
+      preLoaderRoute: typeof CotisationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/club': {
@@ -352,6 +386,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicPaymentsWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/cotisation-reminders': {
+      id: '/api/public/hooks/cotisation-reminders'
+      path: '/api/public/hooks/cotisation-reminders'
+      fullPath: '/api/public/hooks/cotisation-reminders'
+      preLoaderRoute: typeof ApiPublicHooksCotisationRemindersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -375,6 +416,7 @@ const rootRouteChildren: RootRouteChildren = {
   CagnottesRoute: CagnottesRouteWithChildren,
   CarteRoute: CarteRoute,
   ClubRoute: ClubRoute,
+  CotisationsRoute: CotisationsRoute,
   EvenementsRoute: EvenementsRoute,
   MessagesRoute: MessagesRoute,
   MonProfilRoute: MonProfilRoute,
@@ -382,6 +424,8 @@ const rootRouteChildren: RootRouteChildren = {
   AuthSetPasswordRoute: AuthSetPasswordRoute,
   MembresIdRoute: MembresIdRoute,
   AuthIndexRoute: AuthIndexRoute,
+  ApiPublicHooksCotisationRemindersRoute:
+    ApiPublicHooksCotisationRemindersRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
 }
 export const routeTree = rootRouteImport
