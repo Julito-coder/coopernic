@@ -77,12 +77,67 @@ function MessagesPage() {
     return map;
   }, [members]);
 
-  // Conversations = liste de memberIds initiés localement
-  const [conversationIds, setConversationIds] = useState<string[]>([]);
+  const queryClient = useQueryClient();
+
+  // Load all messages where I'm sender or recipient
+  const messagesQ = useQuery({
+    enabled: !!user,
+    queryKey: ["direct_messages", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("direct_messages")
+        .select("id, sender_id, recipient_id, body, attachment, created_at")
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  // Realtime subscription
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`dm-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "direct_messages" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["direct_messages", user.id] });
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, queryClient]);
+
+  const allMessages = messagesQ.data ?? [];
+
+  // Derive threads (peer id -> Message[])
+  const threads = useMemo(() => {
+    const map: Record<string, Message[]> = {};
+    if (!user) return map;
+    for (const row of allMessages) {
+      const peer = row.sender_id === user.id ? row.recipient_id : row.sender_id;
+      const d = new Date(row.created_at);
+      const at = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+      const msg: Message = {
+        id: row.id,
+        from: row.sender_id === user.id ? "me" : "them",
+        text: row.body ?? undefined,
+        attachment: (row.attachment ?? undefined) as MessageAttachment | undefined,
+        at,
+      };
+      (map[peer] ??= []).push(msg);
+    }
+    return map;
+  }, [allMessages, user]);
+
+  // Conversations from DB peers + locally started
+  const [extraConvIds, setExtraConvIds] = useState<string[]>([]);
   const [activeId, setActiveId] = useState<string>("");
   const [query, setQuery] = useState("");
   const [drafts, setDrafts] = useState<Record<string, string>>({});
-  const [threads, setThreads] = useState<Record<string, Message[]>>({});
   const [recoOpen, setRecoOpen] = useState(false);
   const [contactPickerOpen, setContactPickerOpen] = useState(false);
   const [newConvOpen, setNewConvOpen] = useState(false);
@@ -90,11 +145,24 @@ function MessagesPage() {
   const endRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const conversationIds = useMemo(() => {
+    const ids = new Set<string>([...Object.keys(threads), ...extraConvIds]);
+    return Array.from(ids);
+  }, [threads, extraConvIds]);
+
   const conversations = useMemo(() => {
     return conversationIds
       .map((id) => memberById[id])
-      .filter((m): m is ClubMember => !!m);
-  }, [conversationIds, memberById]);
+      .filter((m): m is ClubMember => !!m)
+      .sort((a, b) => {
+        const la = threads[a.id]?.slice(-1)[0];
+        const lb = threads[b.id]?.slice(-1)[0];
+        if (!la && !lb) return 0;
+        if (!la) return 1;
+        if (!lb) return -1;
+        return lb.id.localeCompare(la.id);
+      });
+  }, [conversationIds, memberById, threads]);
 
   const filteredConvs = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -112,34 +180,33 @@ function MessagesPage() {
   }, [activeId, threads]);
 
   const startConversation = (memberId: string) => {
-    setConversationIds((prev) => (prev.includes(memberId) ? prev : [memberId, ...prev]));
+    setExtraConvIds((prev) => (prev.includes(memberId) ? prev : [memberId, ...prev]));
     setActiveId(memberId);
     setNewConvOpen(false);
   };
 
-  const pushMessage = (msg: Omit<Message, "id" | "at" | "from"> & { from?: "me" | "them" }) => {
-    if (!activeId) return;
-    const now = new Date();
-    const at = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-    const full: Message = {
-      id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      from: msg.from ?? "me",
-      text: msg.text,
-      attachment: msg.attachment,
-      at,
-    };
-    setThreads((prev) => ({
-      ...prev,
-      [activeId]: [...(prev[activeId] ?? []), full],
-    }));
+  const insertMessage = async (payload: { body?: string; attachment?: MessageAttachment }) => {
+    if (!activeId || !user) return;
+    const { error } = await supabase.from("direct_messages").insert({
+      sender_id: user.id,
+      recipient_id: activeId,
+      body: payload.body ?? null,
+      attachment: payload.attachment ?? null,
+    });
+    if (error) {
+      console.error("send message failed", error);
+      alert("Impossible d'envoyer le message : " + error.message);
+      return;
+    }
+    queryClient.invalidateQueries({ queryKey: ["direct_messages", user.id] });
   };
 
   const send = () => {
     if (!activeId) return;
     const text = (drafts[activeId] ?? "").trim();
     if (!text) return;
-    pushMessage({ text });
     setDrafts((prev) => ({ ...prev, [activeId]: "" }));
+    void insertMessage({ body: text });
   };
 
   const handleFiles = (files: FileList | null) => {
@@ -147,10 +214,12 @@ function MessagesPage() {
     Array.from(files).forEach((f) => {
       if (!f.type.startsWith("image/")) return;
       const url = URL.createObjectURL(f);
-      pushMessage({ attachment: { kind: "photo", url, name: f.name } });
+      void insertMessage({ attachment: { kind: "photo", url, name: f.name } });
     });
     setAttachMenuOpen(false);
   };
+
+
 
   const availableForNewConv = members.filter((m) => !conversationIds.includes(m.id));
 
