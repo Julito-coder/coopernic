@@ -51,10 +51,23 @@ function AnnuairePage() {
   }
   if (!session.user) return <Navigate to="/auth" />;
 
-  return <Inner userClubId={session.memberClubId ?? null} />;
+  return <Inner userId={session.user.id} />;
 }
 
-function Inner({ userClubId }: { userClubId: string | null }) {
+function Inner({ userId }: { userId: string }) {
+  const meQ = useQuery({
+    queryKey: ["annuaire", "me", userId],
+    queryFn: async (): Promise<string | null> => {
+      const { data, error } = await supabase
+        .from("members")
+        .select("club_id")
+        .eq("id", userId)
+        .maybeSingle();
+      if (error) throw error;
+      return (data?.club_id as string | null) ?? null;
+    },
+  });
+  const userClubId = meQ.data ?? null;
   const [scope, setScope] = useState<Scope>("club");
   const [query, setQuery] = useState("");
   const [selectedClubId, setSelectedClubId] = useState<string | null>(null);
