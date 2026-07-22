@@ -255,6 +255,10 @@ function ClubInner({ clubId, isSuper }: { clubId: string; isSuper: boolean }) {
 
       <ClubModulesCard club={club} />
 
+      <ResponsablesCard club={club} members={members} />
+
+
+
 
       <AddMemberForm clubId={club.id} clubName={club.name} />
 
