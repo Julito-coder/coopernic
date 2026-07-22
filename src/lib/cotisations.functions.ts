@@ -283,18 +283,24 @@ export const markPaymentReceived = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: sub } = await context.supabase
       .from("cotisation_subscriptions")
-      .select("*, cotisation_plans(amount_cents, interval)")
+      .select("*, cotisation_plans(amount_cents, interval, duration_months)")
       .eq("id", data.subscriptionId)
       .maybeSingle();
     if (!sub) throw new Error("Introuvable.");
     await assertManagerOfClub(context.supabase, context.userId, sub.club_id);
     const now = new Date();
-    const end = addInterval(now, (sub as any).cotisation_plans.interval);
+    const end = addInterval(
+      now,
+      (sub as any).cotisation_plans.interval,
+      (sub as any).cotisation_plans.duration_months,
+    );
+    const amount =
+      (sub as any).custom_amount_cents ?? (sub as any).cotisation_plans.amount_cents;
     const { error: pErr } = await context.supabase.from("cotisation_payments").insert({
       subscription_id: sub.id,
       club_id: sub.club_id,
       user_id: sub.user_id,
-      amount_cents: (sub as any).cotisation_plans.amount_cents,
+      amount_cents: amount,
       status: "paid",
       paid_at: now.toISOString(),
       period_start: now.toISOString(),
