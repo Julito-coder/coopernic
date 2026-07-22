@@ -63,6 +63,7 @@ type ClubRow = {
   city: string;
   gestionnaire_id: string | null;
   open_to_network: boolean;
+  modules: string[] | null;
 };
 type MemberRow = {
   id: string;
@@ -105,21 +106,18 @@ function ClubPage() {
 
   const clubId = search.id ?? session.managedClubId ?? "";
   if (!clubId) {
+    if (isGest && !isSuper) {
+      return <CreateClubForm />;
+    }
     return (
       <div className="mx-auto max-w-3xl px-6 py-16 text-center">
         <h1 className="font-display text-2xl font-bold">Aucun club sélectionné</h1>
         <p className="mt-2 text-muted-foreground">
-          {isSuper ? (
-            <>
-              Va dans{" "}
-              <Link to="/admin" className="text-accent underline">
-                Super Admin
-              </Link>{" "}
-              pour en choisir un.
-            </>
-          ) : (
-            "Aucun club n'est rattaché à ton compte."
-          )}
+          Va dans{" "}
+          <Link to="/admin" className="text-accent underline">
+            Super Admin
+          </Link>{" "}
+          pour en choisir un.
         </p>
       </div>
     );
