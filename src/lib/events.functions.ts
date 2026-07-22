@@ -135,6 +135,7 @@ export const createEvent = createServerFn({ method: "POST" })
       poll_results_visible: data.pollResultsVisible,
       is_paid: data.isPaid,
       price_cents: data.isPaid && data.priceEuros ? Math.round(data.priceEuros * 100) : null,
+      attendance_required: data.attendanceRequired,
     };
 
     const firstStart = occurrences[0];
