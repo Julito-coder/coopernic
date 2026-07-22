@@ -182,14 +182,9 @@ function MemberHome() {
                   key={p.id}
                   title={p.title}
                   subtitle={
-                    p.target_amount_cents
-                      ? `Objectif ${formatEuro(p.target_amount_cents / 100)}`
+                    p.goal_cents
+                      ? `Objectif ${formatEuro(p.goal_cents / 100)}`
                       : "Cagnotte ouverte"
-                  }
-                  amount={
-                    p.per_member_cents
-                      ? formatEuro(p.per_member_cents / 100)
-                      : undefined
                   }
                   to="/cagnottes"
                   status="Ouvert"
