@@ -4,8 +4,16 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const IntervalEnum = z.enum(["monthly", "quarterly", "yearly"]);
 
-function addInterval(from: Date, interval: "monthly" | "quarterly" | "yearly"): Date {
+function addInterval(
+  from: Date,
+  interval: "monthly" | "quarterly" | "yearly",
+  durationMonths?: number | null,
+): Date {
   const d = new Date(from);
+  if (durationMonths && durationMonths > 0) {
+    d.setMonth(d.getMonth() + durationMonths);
+    return d;
+  }
   if (interval === "monthly") d.setMonth(d.getMonth() + 1);
   else if (interval === "quarterly") d.setMonth(d.getMonth() + 3);
   else d.setFullYear(d.getFullYear() + 1);
