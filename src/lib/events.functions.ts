@@ -267,6 +267,7 @@ const UpdateSchema = z.object({
       pollResultsVisible: z.boolean().optional(),
       isPaid: z.boolean().optional(),
       priceEuros: z.number().min(0).max(100000).nullable().optional(),
+      attendanceRequired: z.boolean().optional(),
     })
     .refine((v) => Object.keys(v).length > 0, "Aucun changement"),
 });
