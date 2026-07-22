@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       clubs: {
         Row: {
+          bio: string | null
           city: string
           created_at: string
           gestionnaire_id: string | null
@@ -26,6 +27,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          bio?: string | null
           city: string
           created_at?: string
           gestionnaire_id?: string | null
@@ -36,6 +38,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          bio?: string | null
           city?: string
           created_at?: string
           gestionnaire_id?: string | null
