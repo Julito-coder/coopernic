@@ -20,6 +20,7 @@ export type Database = {
           created_at: string
           gestionnaire_id: string | null
           id: string
+          modules: string[]
           name: string
           open_to_network: boolean
           updated_at: string
@@ -29,6 +30,7 @@ export type Database = {
           created_at?: string
           gestionnaire_id?: string | null
           id?: string
+          modules?: string[]
           name: string
           open_to_network?: boolean
           updated_at?: string
@@ -38,6 +40,7 @@ export type Database = {
           created_at?: string
           gestionnaire_id?: string | null
           id?: string
+          modules?: string[]
           name?: string
           open_to_network?: boolean
           updated_at?: string
