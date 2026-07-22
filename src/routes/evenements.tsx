@@ -393,6 +393,53 @@ function CreateEventDialog({
               />
             </Field>
           </div>
+
+          <div className="border-t pt-3 space-y-2">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={isRecurring}
+                onChange={(e) => setIsRecurring(e.target.checked)}
+              />
+              <span className="font-semibold">Évènement récurrent</span>
+            </label>
+            {isRecurring && (
+              <div className="grid grid-cols-3 gap-2">
+                <Field label="Fréquence">
+                  <select
+                    value={freq}
+                    onChange={(e) => setFreq(e.target.value as any)}
+                    className="input"
+                  >
+                    <option value="DAILY">Quotidien</option>
+                    <option value="WEEKLY">Hebdomadaire</option>
+                    <option value="MONTHLY">Mensuel</option>
+                  </select>
+                </Field>
+                <Field label="Tous les">
+                  <input
+                    type="number"
+                    min="1"
+                    value={interval}
+                    onChange={(e) => setInterval(e.target.value)}
+                    className="input"
+                  />
+                </Field>
+                <Field label="Nb occurrences">
+                  <input
+                    type="number"
+                    min="1"
+                    max="52"
+                    value={count}
+                    onChange={(e) => setCount(e.target.value)}
+                    className="input"
+                  />
+                </Field>
+                <div className="col-span-3 text-xs text-muted-foreground">
+                  RRULE: <code>{rrule}</code>
+                </div>
+              </div>
+            )}
           <Field label="Lieu (nom)">
             <input
               value={locationName}
