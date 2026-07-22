@@ -926,9 +926,11 @@ function CreateClubForm() {
 function ResponsablesCard({
   club,
   members,
+  rolesMap,
 }: {
   club: ClubRow;
   members: MemberRow[];
+  rolesMap: Record<string, AppRole>;
 }) {
   const qc = useQueryClient();
   const listFn = useServerFn(listClubModulePermissions);
