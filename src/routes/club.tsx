@@ -600,6 +600,10 @@ const MODULE_META: Record<ModuleKey, { label: string; description: string }> = {
     label: "Cagnottes",
     description: "Cagnottes partagées avec paiements Stripe.",
   },
+  cotisations: {
+    label: "Cotisations",
+    description: "Plans mensuel / trimestriel / annuel, relances automatiques.",
+  },
   carte: {
     label: "Carte",
     description: "Géolocalisation des membres et proposition de café.",
