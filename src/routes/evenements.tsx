@@ -373,6 +373,7 @@ function EditEventDialog({
         practicalInfo: practicalInfo || null,
         isPaid,
         priceEuros: isPaid && priceEuros ? Number(priceEuros) : null,
+        attendanceRequired,
       };
       if (!applySeries) {
         patch.startsAt = new Date(startsAt).toISOString();
