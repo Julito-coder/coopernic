@@ -1,10 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState, useRef, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/lib/use-session";
 import { RecoComposer } from "@/components/RecoComposer";
 import { STATUS_LABEL } from "@/lib/recos-store";
+import { listClubMembersForMessaging } from "@/lib/messages.functions";
 import type { Message, MessageAttachment } from "@/lib/mock-data";
 import { Paperclip, Image as ImageIcon, UserPlus, Sparkles, Send, X, Search, Plus, MessageSquarePlus } from "lucide-react";
 
@@ -20,7 +22,8 @@ export const Route = createFileRoute("/messages")({
 });
 
 type ClubMember = {
-  id: string;
+  id: string; // auth.users.id — used as conversation key & recipient_id
+  memberId: string;
   firstName: string;
   lastName: string;
   initials: string;
@@ -35,38 +38,26 @@ function initialsOf(first: string, last: string) {
 
 function MessagesPage() {
   const { user, loading } = useSession();
+  const listMembersFn = useServerFn(listClubMembersForMessaging);
 
-  // Charger les membres de mon club (via RLS: is_member_of_club)
+  // Charger les membres de mon club avec leur auth user id
   const membersQ = useQuery({
     enabled: !!user,
     queryKey: ["messages", "club-members", user?.id],
     queryFn: async (): Promise<ClubMember[]> => {
-      // Trouver mon club_id à partir de mon email
-      const email = user?.email;
-      if (!email) return [];
-      const { data: me } = await supabase
-        .from("members")
-        .select("club_id")
-        .ilike("email", email)
-        .maybeSingle();
-      const clubId = me?.club_id;
-      if (!clubId) return [];
-      const { data, error } = await supabase
-        .from("members")
-        .select("id, first_name, last_name, email, role, company")
-        .eq("club_id", clubId)
-        .neq("id", user!.id)
-        .order("first_name");
-      if (error) throw error;
-      return (data ?? []).map((m: any) => ({
-        id: m.id,
-        firstName: m.first_name ?? "",
-        lastName: m.last_name ?? "",
-        initials: initialsOf(m.first_name ?? "", m.last_name ?? ""),
-        role: m.role ?? "",
-        company: m.company ?? "",
-        email: m.email ?? "",
-      }));
+      const rows = await listMembersFn();
+      return rows
+        .filter((m) => !!m.authUserId)
+        .map((m) => ({
+          id: m.authUserId as string,
+          memberId: m.memberId,
+          firstName: m.firstName,
+          lastName: m.lastName,
+          initials: initialsOf(m.firstName, m.lastName),
+          role: m.role,
+          company: m.company,
+          email: m.email,
+        }));
     },
   });
 
@@ -329,7 +320,7 @@ function MessagesPage() {
             </div>
             <Link
               to="/membres/$id"
-              params={{ id: member.id }}
+              params={{ id: member.memberId }}
               className="text-xs font-semibold text-accent hover:underline"
             >
               Fiche →
