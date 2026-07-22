@@ -166,9 +166,14 @@ function ClubInner({ clubId, isSuper }: { clubId: string; isSuper: boolean }) {
         .from("user_roles")
         .select("user_id, role, club_id");
       const map: Record<string, AppRole> = {};
+      const rank: Record<string, number> = { superadmin: 3, gestionnaire: 2, membre: 1 };
       (data ?? []).forEach((r: any) => {
-        if (r.role === "superadmin") map[r.user_id] = "superadmin";
-        else if (r.club_id === clubId && !map[r.user_id]) map[r.user_id] = r.role;
+        if (r.role === "superadmin") {
+          if ((rank[map[r.user_id] ?? ""] ?? 0) < 3) map[r.user_id] = "superadmin";
+        } else if (r.club_id === clubId) {
+          const current = rank[map[r.user_id] ?? ""] ?? 0;
+          if ((rank[r.role] ?? 0) > current) map[r.user_id] = r.role;
+        }
       });
       return map;
     },
