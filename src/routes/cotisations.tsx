@@ -167,6 +167,7 @@ function PlansSection({ clubId, isManager }: { clubId: string; isManager: boolea
               </div>
               <div className="text-muted-foreground text-xs">
                 {euros(p.amount_cents)} · {INTERVAL_LABEL[p.interval]}
+                {p.duration_months ? ` · ${p.duration_months} mois` : ""}
               </div>
             </div>
             <div className="flex items-center gap-2">
