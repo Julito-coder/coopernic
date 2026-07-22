@@ -456,7 +456,7 @@ function MessagesPage() {
           } as any}
           conversationId={activeId}
           onSent={(reco) => {
-            pushMessage({
+            void insertMessage({
               attachment: {
                 kind: "reco",
                 recoId: reco.id,
