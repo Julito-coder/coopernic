@@ -732,6 +732,21 @@ function CreateEventDialog({
             <label className="flex items-center gap-2">
               <input
                 type="checkbox"
+                checked={attendanceRequired}
+                onChange={(e) => setAttendanceRequired(e.target.checked)}
+              />
+              <span className="font-semibold">Présence obligatoire pour tous les membres</span>
+            </label>
+            <p className="text-xs text-muted-foreground">
+              Si activé, l'évènement concerne tous les membres du club. Sinon, chacun est libre de
+              répondre au sondage.
+            </p>
+          </div>
+
+          <div className="border-t pt-3 space-y-2">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
                 checked={isPaid}
                 onChange={(e) => setIsPaid(e.target.checked)}
               />
@@ -749,13 +764,19 @@ function CreateEventDialog({
                 />
               </Field>
             )}
-            {isPaid && (
+            {isPaid && attendanceRequired && (
+              <p className="text-xs text-orange-700">
+                ⚠️ Le paiement sera dû par tous les membres, présents ou non.
+              </p>
+            )}
+            {isPaid && !attendanceRequired && (
               <p className="text-xs text-muted-foreground">
                 Après création, une cagnotte pourra être liée à cet évènement pour encaisser les
                 paiements.
               </p>
             )}
           </div>
+
 
           {err && <div className="text-sm text-destructive">{err}</div>}
 
