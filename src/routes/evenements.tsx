@@ -421,25 +421,16 @@ function EditEventDialog({
           />
         </Field>
         {!applySeries && (
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Début">
-              <input
-                type="datetime-local"
-                value={startsAt}
-                onChange={(e) => setStartsAt(e.target.value)}
-                className="input"
-              />
-            </Field>
-            <Field label="Fin">
-              <input
-                type="datetime-local"
-                value={endsAt}
-                onChange={(e) => setEndsAt(e.target.value)}
-                className="input"
-              />
-            </Field>
-          </div>
+          <WhenPicker
+            startsAt={startsAt}
+            endsAt={endsAt}
+            onChange={({ startsAt: s, endsAt: e }) => {
+              setStartsAt(s);
+              setEndsAt(e);
+            }}
+          />
         )}
+
         <Field label="Lieu (nom)">
           <input
             value={locationName}
