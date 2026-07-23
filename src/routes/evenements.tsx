@@ -603,25 +603,16 @@ function CreateEventDialog({
               className="input"
             />
           </Field>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Début *">
-              <input
-                type="datetime-local"
-                required
-                value={startsAt}
-                onChange={(e) => setStartsAt(e.target.value)}
-                className="input"
-              />
-            </Field>
-            <Field label="Fin">
-              <input
-                type="datetime-local"
-                value={endsAt}
-                onChange={(e) => setEndsAt(e.target.value)}
-                className="input"
-              />
-            </Field>
-          </div>
+          <WhenPicker
+            startsAt={startsAt}
+            endsAt={endsAt}
+            onChange={({ startsAt: s, endsAt: e }) => {
+              setStartsAt(s);
+              setEndsAt(e);
+            }}
+            required
+          />
+
 
           <div className="border-t pt-3 space-y-2">
             <label className="flex items-center gap-2">
