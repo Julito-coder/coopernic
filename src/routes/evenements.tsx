@@ -421,25 +421,16 @@ function EditEventDialog({
           />
         </Field>
         {!applySeries && (
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Début">
-              <input
-                type="datetime-local"
-                value={startsAt}
-                onChange={(e) => setStartsAt(e.target.value)}
-                className="input"
-              />
-            </Field>
-            <Field label="Fin">
-              <input
-                type="datetime-local"
-                value={endsAt}
-                onChange={(e) => setEndsAt(e.target.value)}
-                className="input"
-              />
-            </Field>
-          </div>
+          <WhenPicker
+            startsAt={startsAt}
+            endsAt={endsAt}
+            onChange={({ startsAt: s, endsAt: e }) => {
+              setStartsAt(s);
+              setEndsAt(e);
+            }}
+          />
         )}
+
         <Field label="Lieu (nom)">
           <input
             value={locationName}
@@ -603,25 +594,16 @@ function CreateEventDialog({
               className="input"
             />
           </Field>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Début *">
-              <input
-                type="datetime-local"
-                required
-                value={startsAt}
-                onChange={(e) => setStartsAt(e.target.value)}
-                className="input"
-              />
-            </Field>
-            <Field label="Fin">
-              <input
-                type="datetime-local"
-                value={endsAt}
-                onChange={(e) => setEndsAt(e.target.value)}
-                className="input"
-              />
-            </Field>
-          </div>
+          <WhenPicker
+            startsAt={startsAt}
+            endsAt={endsAt}
+            onChange={({ startsAt: s, endsAt: e }) => {
+              setStartsAt(s);
+              setEndsAt(e);
+            }}
+            required
+          />
+
 
           <div className="border-t pt-3 space-y-2">
             <label className="flex items-center gap-2">
@@ -859,5 +841,189 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <div className="text-xs font-semibold text-muted-foreground mb-1">{label}</div>
       {children}
     </label>
+  );
+}
+
+// ---------------- WhenPicker : Date + Heure + Durée (fin optionnelle) ----------------
+
+const DURATION_PRESETS: { label: string; minutes: number | null }[] = [
+  { label: "1 h", minutes: 60 },
+  { label: "1 h 30", minutes: 90 },
+  { label: "2 h", minutes: 120 },
+  { label: "3 h", minutes: 180 },
+  { label: "Journée", minutes: 8 * 60 },
+  { label: "Sans fin", minutes: null },
+];
+
+function pad2(n: number) {
+  return String(n).padStart(2, "0");
+}
+function splitLocal(dt: string): { date: string; time: string } {
+  if (!dt) return { date: "", time: "" };
+  const [date, time = ""] = dt.split("T");
+  return { date, time: time.slice(0, 5) };
+}
+function joinLocal(date: string, time: string): string {
+  if (!date || !time) return "";
+  return `${date}T${time}`;
+}
+function addMinutesLocal(dt: string, minutes: number): string {
+  if (!dt) return "";
+  const d = new Date(dt);
+  d.setMinutes(d.getMinutes() + minutes);
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+function diffMinutes(a: string, b: string): number | null {
+  if (!a || !b) return null;
+  return Math.round((new Date(b).getTime() - new Date(a).getTime()) / 60000);
+}
+
+function WhenPicker({
+  startsAt,
+  endsAt,
+  onChange,
+  required = false,
+}: {
+  startsAt: string;
+  endsAt: string;
+  onChange: (next: { startsAt: string; endsAt: string }) => void;
+  required?: boolean;
+}) {
+  const { date: startDate, time: startTime } = splitLocal(startsAt);
+  const currentDiff = diffMinutes(startsAt, endsAt);
+  const matchedPreset = DURATION_PRESETS.find((p) => p.minutes === currentDiff);
+  const initialMode: "preset" | "custom" =
+    !endsAt ? "preset" : matchedPreset ? "preset" : "custom";
+  const [mode, setMode] = useState<"preset" | "custom">(initialMode);
+
+  const activePresetLabel = !endsAt ? "Sans fin" : matchedPreset?.label ?? null;
+
+  const setStart = (date: string, time: string) => {
+    const next = joinLocal(date, time);
+    if (mode === "preset" && endsAt) {
+      const preset = DURATION_PRESETS.find((p) => p.label === activePresetLabel);
+      if (preset && preset.minutes != null && next) {
+        onChange({ startsAt: next, endsAt: addMinutesLocal(next, preset.minutes) });
+        return;
+      }
+    }
+    if (mode === "custom" && next && endsAt && new Date(endsAt) <= new Date(next)) {
+      onChange({ startsAt: next, endsAt: addMinutesLocal(next, 60) });
+      return;
+    }
+    onChange({ startsAt: next, endsAt });
+  };
+
+  const applyPreset = (p: (typeof DURATION_PRESETS)[number]) => {
+    setMode("preset");
+    if (p.minutes == null) {
+      onChange({ startsAt, endsAt: "" });
+    } else if (startsAt) {
+      onChange({ startsAt, endsAt: addMinutesLocal(startsAt, p.minutes) });
+    } else {
+      onChange({ startsAt, endsAt: "" });
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="text-xs font-semibold text-muted-foreground">
+        Quand{required ? " *" : ""}
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <div className="text-[11px] text-muted-foreground mb-1">Date</div>
+          <input
+            type="date"
+            required={required}
+            value={startDate}
+            onChange={(e) => setStart(e.target.value, startTime || "09:00")}
+            className="input"
+          />
+        </div>
+        <div>
+          <div className="text-[11px] text-muted-foreground mb-1">Heure de début</div>
+          <input
+            type="time"
+            required={required}
+            value={startTime}
+            onChange={(e) => setStart(startDate, e.target.value)}
+            className="input"
+          />
+        </div>
+      </div>
+
+      <div>
+        <div className="text-[11px] text-muted-foreground mb-1">Durée</div>
+        <div className="flex flex-wrap gap-1.5">
+          {DURATION_PRESETS.map((p) => {
+            const active = mode === "preset" && activePresetLabel === p.label;
+            return (
+              <button
+                key={p.label}
+                type="button"
+                onClick={() => applyPreset(p)}
+                className={`px-3 py-1.5 rounded-full text-xs border transition ${
+                  active
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-background hover:bg-accent/10"
+                }`}
+              >
+                {p.label}
+              </button>
+            );
+          })}
+          <button
+            type="button"
+            onClick={() => {
+              setMode("custom");
+              if (!endsAt && startsAt) {
+                onChange({ startsAt, endsAt: addMinutesLocal(startsAt, 120) });
+              }
+            }}
+            className={`px-3 py-1.5 rounded-full text-xs border transition ${
+              mode === "custom"
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-background hover:bg-accent/10"
+            }`}
+          >
+            Personnalisé
+          </button>
+        </div>
+      </div>
+
+      {mode === "custom" && (
+        <div className="grid grid-cols-2 gap-2 pt-1">
+          <div>
+            <div className="text-[11px] text-muted-foreground mb-1">Date de fin</div>
+            <input
+              type="date"
+              value={splitLocal(endsAt).date}
+              onChange={(e) =>
+                onChange({
+                  startsAt,
+                  endsAt: joinLocal(e.target.value, splitLocal(endsAt).time || "18:00"),
+                })
+              }
+              className="input"
+            />
+          </div>
+          <div>
+            <div className="text-[11px] text-muted-foreground mb-1">Heure de fin</div>
+            <input
+              type="time"
+              value={splitLocal(endsAt).time}
+              onChange={(e) =>
+                onChange({
+                  startsAt,
+                  endsAt: joinLocal(splitLocal(endsAt).date || startDate, e.target.value),
+                })
+              }
+              className="input"
+            />
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
