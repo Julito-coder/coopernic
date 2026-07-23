@@ -13,8 +13,20 @@ export const getMyEventsContext = createServerFn({ method: "GET" })
       .eq("user_id", userId)
       .maybeSingle();
     const isSuperadmin = role?.role === "superadmin";
-    const isManager = role?.role === "gestionnaire" || isSuperadmin;
+    let isManager = role?.role === "gestionnaire" || isSuperadmin;
     let clubId: string | null = role?.club_id ?? null;
+    if (!isManager) {
+      const { data: perm } = await supabase
+        .from("user_module_permissions")
+        .select("club_id")
+        .eq("user_id", userId)
+        .eq("module", "evenements")
+        .maybeSingle();
+      if (perm) {
+        isManager = true;
+        if (!clubId) clubId = perm.club_id;
+      }
+    }
     if (!clubId) {
       const { data: m } = await supabase
         .from("members")
